@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - CRUD</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Font Awesome para íconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <h1>CRUD - Iniciar Sesión</h1>
 
+  <div class="form-container">
+    <form id="form-login">
+      <label for="usuario">Usuario:</label>
+      <input type="text" id="usuario" name="usuario" required>
+
+      <label for="contrasena">Contraseña:</label>
+      <div class="password-wrapper">
+        <input type="password" id="contrasena" name="contrasena" required>
+        <button type="button" id="togglePassword" class="toggle-btn">
+          <i class="fa-solid fa-eye-slash"></i> <!-- 👈 por defecto está oculto -->
+        </button>
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="btn-login">Iniciar Sesión</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Mostrar/ocultar contraseña
+    const toggleBtn = document.getElementById("togglePassword");
+    const passwordField = document.getElementById("contrasena");
+    const icon = toggleBtn.querySelector("i");
+
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordField.type === "password";
+      passwordField.type = isPassword ? "text" : "password";
+
+      // Cambiar ícono
+      icon.classList.toggle("fa-eye", isPassword);       // 👁 abierto cuando se ve
+      icon.classList.toggle("fa-eye-slash", !isPassword); // 👁‍🗨 cerrado cuando está oculto
+    });
+
+    // Validación de login
+    document.getElementById("btn-login").addEventListener("click", async () => {
+      const usuario = document.getElementById("usuario").value.trim();
+      const contrasena = document.getElementById("contrasena").value.trim();
+
+      if (!usuario || !contrasena) {
+        Swal.fire("Campos vacíos", "Por favor ingrese usuario y contraseña.", "warning");
+        return;
+      }
+
+      try {
+        const response = await fetch("/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ usuario, contrasena })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          Swal.fire("Éxito", "Inicio de sesión correcto", "success")
+            .then(() => {
+              window.location.href = "empleados.html"; // redirige después del login
+            });
+        } else {
+          Swal.fire("Error", data.message || "Usuario o contraseña incorrectos.", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
+      }
+    });
+  </script>
+</body>
+</html>
