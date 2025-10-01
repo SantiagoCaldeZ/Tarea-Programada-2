@@ -1,0 +1,102 @@
+/* Fondo general */
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f4f9;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;     
+  justify-content: flex-start; /* 👈 deja espacio arriba */
+  height: 100vh;
+  padding-top: 60px;        /* 👈 mueve todo un poco más arriba */
+}
+
+/* Título */
+h1 {
+  margin-bottom: 50px;
+  font-size: 42px;         /* 👈 más grande */
+  font-weight: bold;
+  text-align: center;
+}
+
+/* Contenedor del formulario */
+.form-container {
+  background: white;
+  padding: 70px;           /* 👈 más espacio interno */
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  width: 480px;            /* 👈 más ancho */
+  text-align: center;
+}
+
+/* Labels */
+label {
+  display: block;
+  text-align: left;
+  font-weight: bold;
+  margin-bottom: 12px;
+  font-size: 20px;         /* 👈 más grande */
+}
+
+/* Inputs */
+input {
+  width: 100%;
+  padding: 18px;           /* 👈 más alto */
+  margin-bottom: 30px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 18px;         /* 👈 texto más grande */
+  box-sizing: border-box;
+}
+
+/* Botón */
+.button-group {
+  margin-top: 20px;
+}
+
+.button-group button {
+  width: 100%;
+  padding: 18px;
+  font-size: 20px;         /* 👈 más grande */
+  background: #0078d7;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.button-group button:hover {
+  background: #005a9e;
+}
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 40px; /* espacio para el botón */
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 12px;       /* separa un poco del borde */
+  top: 33%;          /* posición vertical centrada */
+  transform: translateY(-50%); /* corrección exacta del centro */
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 40px;   /* 👈 más grande */
+  color: #555;       /* gris elegante */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;    /* evita que se desplace */
+}
+
+.toggle-btn:hover {
+  color: #000;       /* más oscuro al pasar el mouse */
+}
