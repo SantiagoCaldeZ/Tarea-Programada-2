@@ -9,7 +9,7 @@ BEGIN
         IF @Tipo = 'Nombre'
         BEGIN
             SELECT 
-                Id,               -- 👈 añadir
+                Id,            
                 Nombre,
                 ValorDocumentoIdentidad
             FROM Empleado
@@ -22,7 +22,7 @@ BEGIN
         ELSE IF @Tipo = 'Documento'
         BEGIN
             SELECT 
-                Id,               -- 👈 añadir
+                Id,              
                 Nombre,
                 ValorDocumentoIdentidad
             FROM Empleado
@@ -41,3 +41,4 @@ BEGIN
         SET @outValorRetorno = 50003;
     END CATCH
 END
+
