@@ -35,6 +35,22 @@
       </tbody>
     </table>
   </div>
+  
+  <!-- Modal de acciones -->
+  <div id="modalAcciones" class="modal">
+    <div class="modal-content">
+      <span id="closeModal" class="close">&times;</span>
+      <h2 id="empleadoSeleccionado"></h2>
+      <p>¿Qué acción desea realizar?</p>
+      <div class="button-group-acciones">
+        <button onclick="consultarEmpleado()">Consultar</button>
+        <button onclick="borrarEmpleado()">Borrar</button>
+        <button onclick="modificarEmpleado()">Modificar</button>
+        <button onclick="listarMovimientos()">Listar Movimientos</button>
+        <button onclick="insertarMovimiento()">Insertar Movimiento</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Botón Insertar -->
   <div class="button-group">
@@ -42,6 +58,12 @@
   </div>
 
   <script>
+    document.getElementById("btn-insertar").addEventListener("click", () => {
+      window.location.href = "insertar.html"; 
+    });
+
+    let empleadoActual = null;
+
     // Función para cargar empleados
     async function cargarEmpleados() {
         try {
@@ -49,26 +71,32 @@
             const data = await response.json();
 
             if (data.success) {
-            mostrarEmpleados(data.data);
+              mostrarEmpleados(data.data);
             } else {
-            Swal.fire("Error", data.message || "No se pudieron cargar los empleados", "error");
+              Swal.fire("Error", data.message || "No se pudieron cargar los empleados", "error");
             }
         } catch (err) {
             console.error("Error en cargarEmpleados:", err);
             Swal.fire("Error", "No se pudieron cargar los empleados", "error");
         }
     }
-    // Función para mostrar empleados en la tabla
+
+    // Mostrar empleados en tabla con evento click
     function mostrarEmpleados(empleados) {
       const tbody = document.querySelector("#empleadosTable tbody");
       tbody.innerHTML = "";
       empleados.forEach(emp => {
-          const fila = `
-          <tr>
-              <td>${emp.Nombre}</td>
-              <td>${emp.ValorDocumentoIdentidad}</td>
-          </tr>`;
-          tbody.innerHTML += fila;
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${emp.Nombre}</td>
+          <td>${emp.ValorDocumentoIdentidad}</td>
+        `;
+        fila.addEventListener("click", () => {
+          empleadoActual = emp;                           // 👈 emp.Id ya existe
+          document.getElementById("empleadoSeleccionado").textContent = emp.Nombre;
+          document.getElementById("modalAcciones").style.display = "block";
+        });
+        tbody.appendChild(fila);
       });
     }
 
@@ -79,15 +107,15 @@
 
         try {
             const response = await fetch("/empleados-filtrar", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ valor, tipo })
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ valor, tipo })
             });
             const data = await response.json();
             if (data.success) {
-            mostrarEmpleados(data.data);
+              mostrarEmpleados(data.data);
             } else {
-            Swal.fire("Error", data.message || "No se pudo aplicar el filtro", "error");
+              Swal.fire("Error", data.message || "No se pudo aplicar el filtro", "error");
             }
         } catch (err) {
             console.error(err);
@@ -95,12 +123,77 @@
         }
     });
 
-    // Permitir buscar con Enter
+    // Buscar con Enter
     document.getElementById("searchInput").addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
         document.getElementById("searchBtn").click();
       }
     });
+
+    // Cerrar modal
+    document.getElementById("closeModal").onclick = function() {
+      document.getElementById("modalAcciones").style.display = "none";
+    };
+    window.onclick = function(event) {
+      const modal = document.getElementById("modalAcciones");
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    // Funciones de acciones
+    async function consultarEmpleado() {
+      if (!empleadoActual || !empleadoActual.Id) {
+        Swal.fire("Error", "Vuelve a seleccionar el empleado de la lista.", "error");
+        return;
+      }
+      try {
+        const response = await fetch(`/empleados-consultar/${encodeURIComponent(empleadoActual.Id)}`);
+        const data = await response.json();
+        if (data.success) {
+          const emp = data.data;
+          Swal.fire({
+            title: "Consulta de Empleado",
+            html: `
+              <b>Nombre:</b> ${emp.Nombre}<br>
+              <b>Documento:</b> ${emp.ValorDocumentoIdentidad}<br>
+              <b>Puesto:</b> ${emp.Puesto}<br>
+              <b>Saldo Vacaciones:</b> ${emp.SaldoVacaciones}
+            `,
+            icon: "info"
+          });
+        } else {
+          Swal.fire("Error", data.message || "No se pudo consultar el empleado", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "No se pudo conectar con el servidor", "error");
+      }
+    }
+
+    function borrarEmpleado() {
+      Swal.fire({
+        title: "¿Estás seguro?",
+        text: `Eliminar a ${empleadoActual.Nombre}?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, eliminar"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Aquí irá el fetch a /empleados-borrar
+          Swal.fire("Eliminado", "El empleado ha sido borrado", "success");
+        }
+      });
+    }
+    function modificarEmpleado() {
+      Swal.fire("Modificar", `Aquí abrirías la pantalla de modificación para ${empleadoActual.Nombre}`, "info");
+    }
+    function listarMovimientos() {
+      Swal.fire("Movimientos", `Mostrando movimientos de ${empleadoActual.Nombre}`, "info");
+    }
+    function insertarMovimiento() {
+      Swal.fire("Insertar Movimiento", `Insertando movimiento para ${empleadoActual.Nombre}`, "info");
+    }
 
     // Al cargar la página
     window.onload = cargarEmpleados;
