@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Insertar Empleado</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <h1>Insertar Empleado</h1>
+
+  <div class="form-container">
+    <form id="form-insertar">
+      <label for="nombre">Nombre del Empleado</label>
+      <input type="text" id="nombre" name="nombre" required>
+
+      <label for="documento">Documento de Identidad</label>
+      <input type="text" id="documento" name="documento" required>
+
+      <label for="puesto">Puesto</label>
+      <select id="puesto" name="puesto" required></select>
+
+      <div class="button-group">
+        <button type="button" id="btn-regresar">Regresar</button>
+        <button type="submit" id="btn-confirmar">Confirmar</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    // Al cargar la página, traer los puestos
+    window.onload = async () => {
+        try {
+            const response = await fetch("/puestos");
+            const data = await response.json();
+            const select = document.getElementById("puesto");
+
+            if (data.success) {
+                // Opción vacía inicial
+                const emptyOption = document.createElement("option");
+                emptyOption.value = "";
+                emptyOption.textContent = "Seleccione un puesto...";
+                select.appendChild(emptyOption);
+
+                data.data.forEach(p => {
+                    const option = document.createElement("option");
+                    option.value = p.Id;
+                    option.textContent = p.Nombre;
+                    select.appendChild(option);
+                });
+            } else {
+                Swal.fire("Error", data.message || "No se pudieron cargar los puestos", "error");
+            }
+        } catch (err) {
+            console.error("Error al cargar puestos:", err);
+            Swal.fire("Error", "No se pudieron cargar los puestos", "error");
+        }
+    };
+
+    // Regresar
+    document.getElementById("btn-regresar").addEventListener("click", () => {
+        window.location.href = "empleados.html";
+    });
+
+    // Confirmar inserción con validaciones
+    document.getElementById("form-insertar").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById("nombre").value.trim();
+        const documento = document.getElementById("documento").value.trim();
+        const idPuesto = document.getElementById("puesto").value;
+
+        // 🔹 Validaciones frontend
+        if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(nombre)) {
+            Swal.fire("Error", "El nombre solo puede contener letras y espacios", "warning");
+            return;
+        }
+
+        if (!/^\d+$/.test(documento)) {
+            Swal.fire("Error", "El documento de identidad debe ser numérico", "warning");
+            return;
+        }
+
+        if (!idPuesto) {
+            Swal.fire("Error", "Debe seleccionar un puesto", "warning");
+            return;
+        }
+
+        try {
+            const response = await fetch("/empleados-insertar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nombre, documento, idPuesto })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire("Éxito", "Empleado insertado correctamente", "success")
+                .then(() => window.location.href = "empleados.html");
+            } else {
+                Swal.fire("Error", data.message || "No se pudo insertar el empleado", "error");
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire("Error", "No se pudo conectar con el servidor", "error");
+        }
+    });
+
+    // 🔹 Restricciones en tiempo real
+    document.getElementById("nombre").addEventListener("input", function() {
+        this.value = this.value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñ\s]/g, "");
+    });
+
+    document.getElementById("documento").addEventListener("input", function() {
+        this.value = this.value.replace(/\D/g, "");
+    });
+</script>
+</body>
+</html>
