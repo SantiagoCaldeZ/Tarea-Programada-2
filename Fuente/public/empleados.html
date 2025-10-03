@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de Empleados</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <h1>Empleados</h1>
+
+  <!-- Barra de búsqueda -->
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Buscar...">
+    <select id="filterType">
+      <option value="Nombre">Nombre</option>
+      <option value="Documento">Documento</option>
+    </select>
+    <button id="searchBtn"><i class="fa fa-search"></i></button>
+  </div>
+
+  <!-- Tabla de empleados -->
+  <div class="table-container">
+    <table id="empleadosTable">
+      <thead>
+        <tr>
+          <th>Nombre del Empleado</th>
+          <th>Documento de Identidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Aquí se cargan los empleados -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Botón Insertar -->
+  <div class="button-group">
+    <button id="btn-insertar">INSERTAR</button>
+  </div>
+
+  <script>
+    // Función para cargar empleados
+    async function cargarEmpleados() {
+        try {
+            const response = await fetch("/empleados");
+            const data = await response.json();
+
+            if (data.success) {
+            mostrarEmpleados(data.data);
+            } else {
+            Swal.fire("Error", data.message || "No se pudieron cargar los empleados", "error");
+            }
+        } catch (err) {
+            console.error("Error en cargarEmpleados:", err);
+            Swal.fire("Error", "No se pudieron cargar los empleados", "error");
+        }
+    }
+    // Función para mostrar empleados en la tabla
+    function mostrarEmpleados(empleados) {
+      const tbody = document.querySelector("#empleadosTable tbody");
+      tbody.innerHTML = "";
+      empleados.forEach(emp => {
+          const fila = `
+          <tr>
+              <td>${emp.Nombre}</td>
+              <td>${emp.ValorDocumentoIdentidad}</td>
+          </tr>`;
+          tbody.innerHTML += fila;
+      });
+    }
+
+    // Buscar empleados con filtro
+    document.getElementById("searchBtn").addEventListener("click", async () => {
+        const valor = document.getElementById("searchInput").value.trim();
+        const tipo = document.getElementById("filterType").value;
+
+        try {
+            const response = await fetch("/empleados-filtrar", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ valor, tipo })
+            });
+            const data = await response.json();
+            if (data.success) {
+            mostrarEmpleados(data.data);
+            } else {
+            Swal.fire("Error", data.message || "No se pudo aplicar el filtro", "error");
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire("Error", "No se pudo aplicar el filtro", "error");
+        }
+    });
+
+    // Permitir buscar con Enter
+    document.getElementById("searchInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("searchBtn").click();
+      }
+    });
+
+    // Al cargar la página
+    window.onload = cargarEmpleados;
+  </script>
+</body>
+</html>
