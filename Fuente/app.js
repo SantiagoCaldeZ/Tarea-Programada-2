@@ -98,6 +98,85 @@ app.post("/empleados-filtrar", async (req, res) => {
     }
 });
 
+// Obtener puestos
+app.get("/puestos", async (req, res) => {
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+    request.output("outValorRetorno", sql.Int);
+
+    const result = await request.execute("sp_ObtenerPuestos");
+    const retorno = result.output.outValorRetorno;
+
+    if (retorno === 0) {
+      res.json({ success: true, data: result.recordset });
+    } else {
+      res.json({ success: false, message: "Error al obtener puestos" });
+    }
+  } catch (err) {
+    console.error("Error en /puestos:", err);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
+// Insertar empleado
+app.post("/empleados-insertar", async (req, res) => {
+  const { nombre, documento, idPuesto } = req.body;
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+    request.input("Nombre", sql.NVarChar, nombre);
+    request.input("Documento", sql.NVarChar, documento);
+    request.input("IdPuesto", sql.Int, idPuesto);
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_InsertarEmpleado");
+    const codigo = result.output.outCodigo;
+
+    if (codigo === 0) {
+      res.json({ success: true });
+    } else if (codigo === 50001) {
+      res.json({ success: false, message: "Ya existe un empleado con ese nombre" });
+    } else if (codigo === 50002) {
+      res.json({ success: false, message: "Ya existe un empleado con ese documento de identidad" });
+    } else {
+      res.json({ success: false, message: "Error al insertar empleado" });
+    }
+  } catch (err) {
+    console.error("Error en /empleados-insertar:", err);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
+// Consultar un empleado
+app.get("/empleados-consultar/:id", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ success: false, message: "Id inválido" });
+  }
+
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+    request.input("IdEmpleado", sql.Int, id);
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_ConsultarEmpleado");
+    console.log("[/empleados-consultar] id=", id, "out=", result.output, "rows=", result.recordset?.length);
+
+    const codigo = result.output.outCodigo;
+
+    if (codigo === 0 && result.recordset.length > 0) {
+      return res.json({ success: true, data: result.recordset[0] });
+    }
+    return res.json({ success: false, message: "Empleado no encontrado" });
+  } catch (err) {
+  console.error("Error en /empleados-consultar:", err);
+    if (err?.originalError?.info) console.error("SQL info:", err.originalError.info);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
 // ======================== SERVIDOR ========================
 app.listen(port, () => {
     console.log(`Servidor corriendo en http://localhost:${port}`);
