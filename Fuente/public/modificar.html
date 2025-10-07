@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modificar Empleado</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body {
+      background-color: #f7f7fb;
+      font-family: Arial, sans-serif;
+    }
+
+    form {
+      width: 400px;
+      margin: 40px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      width: 100%;
+      background-color: #4a57e8;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      margin-top: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #3543c3;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align:center; margin-top:20px;">Modificar Empleado</h1>
+
+  <form id="modificarForm">
+    <label>Documento de Identidad Actual:</label>
+    <input type="text" id="docActual" readonly>
+
+    <label>Nuevo Documento de Identidad:</label>
+    <input type="text" id="nuevoDoc" placeholder="Solo números">
+
+    <label>Nombre Actual:</label>
+    <input type="text" id="nombreActual" readonly>
+
+    <label>Nuevo Nombre:</label>
+    <input type="text" id="nuevoNombre" placeholder="Solo letras y espacios">
+
+    <label>Id Puesto Actual:</label>
+    <input type="text" id="puestoActual" readonly>
+
+    <label>Nuevo Id Puesto:</label>
+    <input type="text" id="nuevoIdPuesto" placeholder="Solo números">
+
+    <button type="submit">Guardar Cambios</button>
+  </form>
+
+  <script>
+    const empleado = JSON.parse(localStorage.getItem("empleadoModificar"));
+
+    if (empleado) {
+      document.getElementById("docActual").value = empleado.ValorDocumentoIdentidad;
+      document.getElementById("nombreActual").value = empleado.Nombre;
+      document.getElementById("puestoActual").value = empleado.IdPuesto;;
+    }
+
+    // 🔹 Restringir entradas según tipo de campo
+    document.getElementById("nuevoDoc").addEventListener("input", e => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, "");
+    });
+
+    document.getElementById("nuevoNombre").addEventListener("input", e => {
+      e.target.value = e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ ]/g, "");
+    });
+
+    document.getElementById("nuevoIdPuesto").addEventListener("input", e => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, "");
+    });
+
+    // 🔹 Envío al backend
+    document.getElementById("modificarForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const datos = {
+        id: empleado.Id,
+        nuevoDoc: document.getElementById("nuevoDoc").value.trim() || null,
+        nuevoNombre: document.getElementById("nuevoNombre").value.trim() || null,
+        nuevoIdPuesto: document.getElementById("nuevoIdPuesto").value.trim() || null
+      };
+
+      try {
+        const res = await fetch("/empleados-modificar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(datos)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          Swal.fire("✅ Éxito", "Empleado modificado correctamente", "success").then(() => {
+            window.location.href = "empleados.html";
+          });
+        } else {
+          Swal.fire("⚠️ Error", data.message, "error");
+        }
+      } catch {
+        Swal.fire("❌ Error", "No se pudo conectar con el servidor", "error");
+      }
+    });
+  </script>
+</body>
+</html>
