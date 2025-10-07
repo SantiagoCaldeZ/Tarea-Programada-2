@@ -5,16 +5,21 @@ BEGIN
     SET NOCOUNT ON;
     BEGIN TRY
         SELECT 
-            Id,                  
-            Nombre,
-            ValorDocumentoIdentidad
-        FROM Empleado
-        WHERE EsActivo = 1
-        ORDER BY Nombre ASC;
+            e.Id,
+            e.Nombre,
+            e.ValorDocumentoIdentidad,
+            e.IdPuesto,
+            p.Nombre AS Puesto,
+            e.SaldoVacaciones
+        FROM Empleado e
+        INNER JOIN Puesto p ON e.IdPuesto = p.Id
+        WHERE e.EsActivo = 1
+        ORDER BY e.Nombre ASC;
 
         SET @outValorRetorno = 0;
     END TRY
     BEGIN CATCH
-        SET @outValorRetorno = 50001;
+        SET @outValorRetorno = 50001; -- Error inesperado al obtener empleados
     END CATCH
 END
+GO
