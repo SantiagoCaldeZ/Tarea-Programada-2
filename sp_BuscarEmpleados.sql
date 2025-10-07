@@ -9,36 +9,44 @@ BEGIN
         IF @Tipo = 'Nombre'
         BEGIN
             SELECT 
-                Id,            
-                Nombre,
-                ValorDocumentoIdentidad
-            FROM Empleado
-            WHERE EsActivo = 1
-              AND Nombre LIKE '%' + @Filtro + '%'
-            ORDER BY Nombre ASC;
+                e.Id,
+                e.Nombre,
+                e.ValorDocumentoIdentidad,
+                e.IdPuesto,
+                p.Nombre AS Puesto,
+                e.SaldoVacaciones
+            FROM Empleado e
+            INNER JOIN Puesto p ON e.IdPuesto = p.Id
+            WHERE e.EsActivo = 1
+              AND e.Nombre LIKE '%' + @Filtro + '%'
+            ORDER BY e.Nombre ASC;
 
             SET @outValorRetorno = 0;
         END
         ELSE IF @Tipo = 'Documento'
         BEGIN
             SELECT 
-                Id,              
-                Nombre,
-                ValorDocumentoIdentidad
-            FROM Empleado
-            WHERE EsActivo = 1
-              AND ValorDocumentoIdentidad LIKE '%' + @Filtro + '%'
-            ORDER BY Nombre ASC;
+                e.Id,
+                e.Nombre,
+                e.ValorDocumentoIdentidad,
+                e.IdPuesto,
+                p.Nombre AS Puesto,
+                e.SaldoVacaciones
+            FROM Empleado e
+            INNER JOIN Puesto p ON e.IdPuesto = p.Id
+            WHERE e.EsActivo = 1
+              AND e.ValorDocumentoIdentidad LIKE '%' + @Filtro + '%'
+            ORDER BY e.Nombre ASC;
 
             SET @outValorRetorno = 0;
         END
         ELSE
         BEGIN
-            SET @outValorRetorno = 50002;
+            SET @outValorRetorno = 50002; -- Tipo de filtro inválido
         END
     END TRY
     BEGIN CATCH
-        SET @outValorRetorno = 50003;
+        SET @outValorRetorno = 50003; -- Error inesperado
     END CATCH
 END
-
+GO
