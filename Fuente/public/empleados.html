@@ -92,7 +92,7 @@
           <td>${emp.ValorDocumentoIdentidad}</td>
         `;
         fila.addEventListener("click", () => {
-          empleadoActual = emp;                           // 👈 emp.Id ya existe
+          empleadoActual = emp;                        
           document.getElementById("empleadoSeleccionado").textContent = emp.Nombre;
           document.getElementById("modalAcciones").style.display = "block";
         });
@@ -173,21 +173,44 @@
 
     function borrarEmpleado() {
       Swal.fire({
-        title: "¿Estás seguro?",
-        text: `Eliminar a ${empleadoActual.Nombre}?`,
+        title: "¿Está seguro?",
+        html: `
+          <b>Nombre:</b> ${empleadoActual.Nombre}<br>
+          <b>Documento:</b> ${empleadoActual.ValorDocumentoIdentidad}<br>
+          <br>¿Desea eliminar este empleado?`,
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: "Sí, eliminar"
-      }).then((result) => {
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+      }).then(async (result) => {
         if (result.isConfirmed) {
-          // Aquí irá el fetch a /empleados-borrar
-          Swal.fire("Eliminado", "El empleado ha sido borrado", "success");
+          try {
+            const response = await fetch(`/empleados-borrar/${empleadoActual.Id}`, {
+              method: "DELETE"
+            });
+            const data = await response.json();
+
+            if (data.success) {
+              Swal.fire("Eliminado", "El empleado ha sido dado de baja", "success");
+              cargarEmpleados(); // recarga la lista
+            } else {
+              Swal.fire("Error", data.message || "No se pudo borrar el empleado", "error");
+            }
+          } catch (err) {
+            console.error(err);
+            Swal.fire("Error", "No se pudo conectar con el servidor", "error");
+          }
         }
       });
     }
     function modificarEmpleado() {
-      Swal.fire("Modificar", `Aquí abrirías la pantalla de modificación para ${empleadoActual.Nombre}`, "info");
+      // Guardamos los datos del empleado seleccionado en localStorage
+      localStorage.setItem("empleadoModificar", JSON.stringify(empleadoActual));
+
+      // Redirigimos a la página de modificación
+      window.location.href = "modificar.html";
     }
+    
     function listarMovimientos() {
       Swal.fire("Movimientos", `Mostrando movimientos de ${empleadoActual.Nombre}`, "info");
     }
