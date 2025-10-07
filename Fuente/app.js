@@ -93,9 +93,13 @@ app.post("/empleados-filtrar", async (req, res) => {
             res.json({ success: false, message: "Error inesperado al filtrar empleados" });
         }
     } catch (err) {
-        console.error("Error en /empleados-filtrar:", err);
-        res.status(500).send("Error en el servidor");
-    }
+        console.error("Error en /empleados-modificar:");
+        console.error(err.message);
+        if (err.originalError?.info) {
+          console.error("SQL Error:", err.originalError.info);
+        }
+        res.status(500).json({ success: false, message: "Error en el servidor (ver consola)" });
+      }
 });
 
 // Obtener puestos
@@ -173,6 +177,66 @@ app.get("/empleados-consultar/:id", async (req, res) => {
   } catch (err) {
   console.error("Error en /empleados-consultar:", err);
     if (err?.originalError?.info) console.error("SQL info:", err.originalError.info);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
+// ======================== BORRAR EMPLEADO ========================
+app.delete("/empleados-borrar/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+    request.input("IdEmpleado", sql.Int, id);
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_BorrarEmpleado");
+    const codigo = result.output.outCodigo;
+
+    if (codigo === 0) {
+      res.json({ success: true });
+    } else if (codigo === 50001) {
+      res.json({ success: false, message: "El empleado no existe" });
+    } else if (codigo === 50002) {
+      res.json({ success: false, message: "El empleado ya estaba inactivo" });
+    } else {
+      res.json({ success: false, message: "Error al borrar el empleado" });
+    }
+  } catch (err) {
+    console.error("Error en /empleados-borrar:", err);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
+// ======================== MODIFICAR EMPLEADO ========================
+app.post("/empleados-modificar", async (req, res) => {
+  const { id, nuevoDoc, nuevoNombre, nuevoIdPuesto } = req.body;
+
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+    request.input("IdEmpleado", sql.Int, id);
+    request.input("NuevoDocumento", sql.NVarChar, nuevoDoc);
+    request.input("NuevoNombre", sql.NVarChar, nuevoNombre);
+    request.input("NuevoIdPuesto", sql.Int, nuevoIdPuesto);
+    request.input("IdPostByUser", sql.Int, 1); // admin temporal
+    request.input("PostInIP", sql.VarChar, "127.0.0.1");
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_ModificarEmpleado");
+    const codigo = result.output.outCodigo;
+
+    if (codigo === 0) {
+      res.json({ success: true });
+    } else if (codigo === 50002) {
+      res.json({ success: false, message: "Ya existe un empleado con ese documento de identidad" });
+    } else if (codigo === 50003) {
+      res.json({ success: false, message: "Ya existe un empleado con ese nombre" });
+    } else {
+      res.json({ success: false, message: "Error al modificar empleado" });
+    }
+  } catch (err) {
+    console.error("Error en /empleados-modificar:", err);
     res.status(500).json({ success: false, message: "Error en el servidor" });
   }
 });
