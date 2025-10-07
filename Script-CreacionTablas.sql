@@ -74,21 +74,37 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[Movimiento](
-	[Id] [int] NOT NULL,
-	[IdEmpleado] [int] NOT NULL,
-	[IdTipoMovimiento] [int] NOT NULL,
-	[Fecha] [date] NOT NULL,
-	[Monto] [money] NOT NULL,
-	[NuevoSaldo] [money] NOT NULL,
-	[IdPostByUser] [int] NOT NULL,
-	[PostInIP] [varchar](32) NOT NULL,
-	[PostTime] [datetime] NOT NULL,
- CONSTRAINT [PK_Movimiento] PRIMARY KEY CLUSTERED 
+CREATE TABLE [dbo].[BitacoraEvento](
+    [Id] [int] NOT NULL,
+    [IdTipoEvento] [int] NOT NULL,
+      NULL,
+    [IdPostByUser] [int] NOT NULL,
+      NOT NULL,
+    [PostTime] [datetime] NOT NULL,
+ CONSTRAINT [PK_BitacoraEvento] PRIMARY KEY CLUSTERED 
 (
-	[Id] ASC
-)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+    [Id] ASC
+)WITH (
+    STATISTICS_NORECOMPUTE = OFF, 
+    IGNORE_DUP_KEY = OFF, 
+    OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF
 ) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+-- 🔗 Relaciones
+ALTER TABLE [dbo].[BitacoraEvento]  WITH CHECK ADD  
+CONSTRAINT [FK_BitacoraEvento_TipoEvento] FOREIGN KEY([IdTipoEvento])
+REFERENCES [dbo].[TipoEvento] ([Id]);
+GO
+ALTER TABLE [dbo].[BitacoraEvento] CHECK CONSTRAINT [FK_BitacoraEvento_TipoEvento];
+GO
+
+ALTER TABLE [dbo].[BitacoraEvento]  WITH CHECK ADD  
+CONSTRAINT [FK_BitacoraEvento_Usuario] FOREIGN KEY([IdPostByUser])
+REFERENCES [dbo].[Usuario] ([Id]);
+GO
+ALTER TABLE [dbo].[BitacoraEvento] CHECK CONSTRAINT [FK_BitacoraEvento_Usuario];
 GO
 
 SET ANSI_NULLS ON
@@ -179,3 +195,4 @@ REFERENCES [dbo].[Usuario] ([Id])
 GO
 ALTER TABLE [dbo].[Movimiento] CHECK CONSTRAINT [FK_Movimiento_Usuario]
 GO
+
