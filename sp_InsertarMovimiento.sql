@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE sp_InsertarMovimiento
+ï»¿CREATE OR ALTER PROCEDURE sp_InsertarMovimiento
     @IdEmpleado INT,
     @IdTipoMovimiento INT,
     @Monto DECIMAL(10,2),
@@ -12,36 +12,62 @@ BEGIN
         DECLARE @TipoAccion NVARCHAR(20);
         DECLARE @SaldoActual DECIMAL(10,2);
         DECLARE @NuevoSaldo DECIMAL(10,2);
+        DECLARE @NombreEmpleado NVARCHAR(100);
+        DECLARE @ValorDoc NVARCHAR(50);
+        DECLARE @NombreTipo NVARCHAR(50);
+        DECLARE @mensaje NVARCHAR(300);
 
         -- Verificar existencia del empleado activo
         IF NOT EXISTS (SELECT 1 FROM Empleado WHERE Id = @IdEmpleado AND EsActivo = 1)
         BEGIN
             SET @outCodigo = 50031; -- Empleado inexistente o inactivo
+
+            SET @mensaje = 'Error 50031: Empleado no existe o estÃ¡ inactivo (Id=' + CAST(@IdEmpleado AS NVARCHAR(10)) + ')';
+            EXEC sp_RegistrarEvento 
+                 @IdTipoEvento = 4,
+                 @Descripcion = @mensaje,
+                 @IdPostByUser = @IdPostByUser,
+                 @PostInIP = @PostInIP;
             RETURN;
         END;
 
-        -- Obtener tipo de acción y saldo actual
+        -- Obtener tipo de acciÃ³n, nombre y saldo actual
         SELECT 
             @TipoAccion = tm.TipoAccion,
-            @SaldoActual = e.SaldoVacaciones
+            @NombreTipo = tm.Nombre,
+            @SaldoActual = e.SaldoVacaciones,
+            @NombreEmpleado = e.Nombre,
+            @ValorDoc = e.ValorDocumentoIdentidad
         FROM Empleado e
         INNER JOIN TipoMovimiento tm ON tm.Id = @IdTipoMovimiento
         WHERE e.Id = @IdEmpleado;
 
         IF @TipoAccion IS NULL
         BEGIN
-            SET @outCodigo = 50032; -- Tipo de movimiento inválido
+            SET @outCodigo = 50032; -- Tipo de movimiento invÃ¡lido
+            SET @mensaje = 'Error 50032: Tipo de movimiento invÃ¡lido (Empleado=' + @NombreEmpleado + ')';
+            EXEC sp_RegistrarEvento 
+                 @IdTipoEvento = 4,
+                 @Descripcion = @mensaje,
+                 @IdPostByUser = @IdPostByUser,
+                 @PostInIP = @PostInIP;
             RETURN;
         END;
 
-        -- Calcular nuevo saldo según tipo de acción
-        IF @TipoAccion IN ('Credito', 'Crédito')
+        -- Calcular nuevo saldo
+        IF @TipoAccion IN ('Credito', 'CrÃ©dito')
             SET @NuevoSaldo = @SaldoActual + @Monto;
-        ELSE IF @TipoAccion IN ('Debito', 'Débito')
+        ELSE IF @TipoAccion IN ('Debito', 'DÃ©bito')
             SET @NuevoSaldo = @SaldoActual - @Monto;
         ELSE
         BEGIN
             SET @outCodigo = 50035; -- TipoAccion desconocido
+            SET @mensaje = 'Error 50035: Tipo de acciÃ³n desconocido (' + ISNULL(@TipoAccion,'NULL') + ')';
+            EXEC sp_RegistrarEvento 
+                 @IdTipoEvento = 4,
+                 @Descripcion = @mensaje,
+                 @IdPostByUser = @IdPostByUser,
+                 @PostInIP = @PostInIP;
             RETURN;
         END;
 
@@ -49,6 +75,14 @@ BEGIN
         IF @NuevoSaldo < 0
         BEGIN
             SET @outCodigo = 50033; -- Saldo insuficiente
+            SET @mensaje = 'Error 50033: Saldo negativo resultante para empleado ' + @NombreEmpleado +
+                           ' (Saldo actual=' + CAST(@SaldoActual AS NVARCHAR(20)) +
+                           ', Monto=' + CAST(@Monto AS NVARCHAR(20)) + ')';
+            EXEC sp_RegistrarEvento 
+                 @IdTipoEvento = 4,
+                 @Descripcion = @mensaje,
+                 @IdPostByUser = @IdPostByUser,
+                 @PostInIP = @PostInIP;
             RETURN;
         END;
 
@@ -56,15 +90,35 @@ BEGIN
         INSERT INTO Movimiento (IdEmpleado, IdTipoMovimiento, Fecha, Monto, NuevoSaldo, IdPostByUser, PostInIP, PostTime)
         VALUES (@IdEmpleado, @IdTipoMovimiento, GETDATE(), @Monto, @NuevoSaldo, @IdPostByUser, @PostInIP, GETDATE());
 
-        -- Actualizar saldo en empleado
+        -- Actualizar saldo
         UPDATE Empleado
         SET SaldoVacaciones = @NuevoSaldo
         WHERE Id = @IdEmpleado;
 
-        SET @outCodigo = 0; -- Éxito
+        SET @outCodigo = 0; -- Ã‰xito
+
+        -- âœ… Registrar evento exitoso
+        SET @mensaje = 'Movimiento insertado exitosamente: Documento=' + @ValorDoc +
+                       ', Nombre=' + @NombreEmpleado +
+                       ', Tipo=' + @NombreTipo +
+                       ', AcciÃ³n=' + @TipoAccion +
+                       ', Monto=' + CAST(@Monto AS NVARCHAR(20)) +
+                       ', NuevoSaldo=' + CAST(@NuevoSaldo AS NVARCHAR(20));
+        EXEC sp_RegistrarEvento 
+             @IdTipoEvento = 3,  -- InserciÃ³n exitosa
+             @Descripcion = @mensaje,
+             @IdPostByUser = @IdPostByUser,
+             @PostInIP = @PostInIP;
+
     END TRY
     BEGIN CATCH
         SET @outCodigo = 50034; -- Error inesperado
+        SET @mensaje = 'Error 50034: ExcepciÃ³n inesperada al insertar movimiento (Empleado Id=' + CAST(@IdEmpleado AS NVARCHAR(10)) + ')';
+        EXEC sp_RegistrarEvento 
+             @IdTipoEvento = 4,
+             @Descripcion = @mensaje,
+             @IdPostByUser = @IdPostByUser,
+             @PostInIP = @PostInIP;
     END CATCH
 END;
 GO

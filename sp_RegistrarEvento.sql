@@ -5,14 +5,15 @@ CREATE OR ALTER PROCEDURE sp_RegistrarEvento
   @PostInIP VARCHAR(32)
 AS
 BEGIN
-  INSERT INTO BitacoraEvento (Id, IdTipoEvento, Descripcion, IdPostByUser, PostInIP, PostTime)
+  SET NOCOUNT ON;
+
+  INSERT INTO BitacoraEvento (IdTipoEvento, Descripcion, IdPostByUser, PostInIP, PostTime)
   VALUES (
-    (SELECT ISNULL(MAX(Id), 0) + 1 FROM BitacoraEvento),
     @IdTipoEvento,
     @Descripcion,
     @IdPostByUser,
     @PostInIP,
     GETDATE()
   );
-END
+END;
 GO
