@@ -22,11 +22,15 @@ app.use(express.static(path.join(__dirname, "public")));
 // ======================== LOGIN ========================
 app.post("/login", async (req, res) => {
     const { usuario, contrasena } = req.body;
+
+    const clientIp = req.socket.remoteAddress || req.ip || "Unknown IP";
+    console.log(clientIp)
     try {
         let pool = await sql.connect(dbConfig);
         let request = pool.request();
         request.input("inUsuario", sql.NVarChar, usuario);
         request.input("inPassword", sql.NVarChar, contrasena);
+        request.input("inPostInIP", sql.VarChar, clientIp);
         request.output("outCodigo", sql.Int);
 
         const result = await request.execute("sp_Login");
