@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Insertar Movimiento</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body>
+  <h1>Insertar Movimiento</h1>
+
+  <div class="form-container">
+    <label>Documento de Identidad:</label>
+    <input type="text" id="doc" readonly>
+
+    <label>Nombre del Empleado:</label>
+    <input type="text" id="nombre" readonly>
+
+    <label>Saldo Vacaciones Actual:</label>
+    <input type="text" id="saldo" readonly>
+
+    <label>Tipo de Movimiento:</label>
+    <select id="tipoMovimiento"></select>
+
+    <label>Monto:</label>
+    <input type="number" id="monto" min="0" step="0.01" placeholder="Solo números">
+
+    <button id="btn-insertar">Guardar Movimiento</button>
+  </div>
+
+  <script>
+        const empleado =
+            JSON.parse(sessionStorage.getItem("empleadoSeleccionado")) ||
+            JSON.parse(localStorage.getItem("empleadoMovimiento"));
+
+        if (!empleado) {
+            Swal.fire("Error", "No se encontró el empleado seleccionado", "error")
+                .then(() => window.location.href = "empleados.html");
+        } else {
+            document.getElementById("doc").value = empleado.ValorDocumentoIdentidad;
+            document.getElementById("nombre").value = empleado.Nombre;
+            document.getElementById("saldo").value = empleado.SaldoVacaciones;
+            cargarTiposMovimiento();
+        }
+
+        // ================= Cargar Tipos de Movimiento =================
+        async function cargarTiposMovimiento() {
+            try {
+                const res = await fetch("/tipos-movimiento");
+                const data = await res.json();
+                const select = document.getElementById("tipoMovimiento");
+                select.innerHTML = "";
+
+                if (data.success && Array.isArray(data.data)) {
+                    data.data.forEach(t => {
+                        const opt = document.createElement("option");
+                        opt.value = t.Id;
+                        opt.textContent = `${t.Nombre} (${t.TipoAccion})`;
+                        select.appendChild(opt);
+                    });
+                } else {
+                    Swal.fire("Error", data.message || "No se encontraron tipos de movimiento", "error");
+                }
+            } catch (err) {
+                Swal.fire("Error", "No se pudieron cargar los tipos de movimiento", "error");
+            }
+        }
+
+        // ================= Insertar Movimiento =================
+        document.getElementById("btn-insertar").addEventListener("click", async () => {
+            const idTipo = parseInt(document.getElementById("tipoMovimiento").value);
+            const monto = parseFloat(document.getElementById("monto").value);
+
+            if (!idTipo || monto <= 0) {
+                Swal.fire("Advertencia", "Debe seleccionar un tipo de movimiento y un monto válido", "warning");
+                return;
+            }
+
+            const res = await fetch("/movimientos-insertar", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    idEmpleado: empleado.Id,
+                    idTipoMovimiento: idTipo,
+                    monto,
+                    idUsuario: 1,
+                    ip: "127.0.0.1"
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                Swal.fire({
+                    title: "Éxito",
+                    text: "Movimiento insertado correctamente",
+                    icon: "success",
+                    confirmButtonText: "OK"
+                }).then(() => {
+                    // 🔹 Actualiza el saldo mostrado si el backend lo devuelve
+                    if (data.nuevoSaldo) {
+                        document.getElementById("saldo").value = data.nuevoSaldo;
+                    }
+
+                    // 🔹 Limpia el campo monto
+                    document.getElementById("monto").value = "";
+
+                    // 🔹 Vuelve a cargar los tipos por si algo cambió
+                    cargarTiposMovimiento();
+                });
+            } else {
+                Swal.fire("Error", data.message, "error");
+            }
+        });
+    </script>
+</body>
+</html>
