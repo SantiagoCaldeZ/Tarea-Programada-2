@@ -1,54 +1,44 @@
-CREATE OR ALTER PROCEDURE dbo.sp_CheckLoginBlock
-     @inUsuario          AS NVARCHAR(50)
-   , @inPostInIP         AS VARCHAR(50)
-   , @estaBlock       AS BIT OUTPUT    -- 1: Bloqueado temporalmente, 0: Disponible
+CREATE OR ALTER PROCEDURE sp_CheckLoginBlock
+    @inUsuario NVARCHAR(50),
+    @inPostInIP VARCHAR(50),
+    @estaBlock BIT OUTPUT
 AS
 BEGIN
-    
     SET NOCOUNT ON;
+    DECLARE @V_IdUsuario INT;
+    DECLARE @V_FailedAttempts INT;
+    DECLARE @V_MaxIntentos INT = 5;
+    DECLARE @V_TiempoLimite INT = 5;
+    DECLARE @V_MinutosRestantes INT;
+    DECLARE @V_Mensaje NVARCHAR(200);
 
-    -- Constantes para las reglas
-    DECLARE @V_TiempoLimite AS INT;
-    DECLARE @V_MaxIntentos      AS INT;
-    SET @V_TiempoLimite = 5;
-    SET @V_MaxIntentos      = 5;
+    SET @estaBlock = 0;
 
-    -- Variables para el proceso
-    DECLARE @V_UserId           AS INT;
-    DECLARE @V_FailedAttempts   AS INT;
+    -- Obtener ID del usuario si existe
+    SELECT @V_IdUsuario = Id FROM Usuario WHERE Username = @inUsuario;
 
-    SET @estaBlock = 0; -- Por defecto, no está bloqueado
-
-    -- 1. Obtener el ID del usuario
-    SELECT 
-          @V_UserId = U.Id
-    FROM 
-        dbo.Usuario AS U
-    WHERE 
-        ( U.Username = @inUsuario );
-        
-    -- Si el usuario no existe, no puede estar bloqueado, se mantiene @@estaBlock = 0
-    IF ( @V_UserId IS NULL )
-    BEGIN
+    -- Si no existe, no bloquear (evita afectar a todos)
+    IF @V_IdUsuario IS NULL
         RETURN;
-    END;
 
-    -- 2. Contar intentos fallidos (TipoEvento=2) en los últimos 5 minutos
-    SELECT
-          @V_FailedAttempts = COUNT(BE.Id)
-    FROM
-        dbo.BitacoraEvento AS BE
-    WHERE
-            ( BE.IdTipoEvento = 2 )
-        AND ( BE.IdPostByUser = @V_UserId )
-        AND ( BE.PostInIP = @inPostInIP )
-        AND ( BE.PostTime >= DATEADD(MINUTE, -@V_TiempoLimite, GETDATE()) );
+    -- Contar los intentos fallidos del usuario en esa IP en los últimos 5 minutos
+    SELECT @V_FailedAttempts = COUNT(*)
+    FROM BitacoraEvento
+    WHERE IdTipoEvento = 2  -- login fallido
+      AND IdPostByUser = @V_IdUsuario
+      AND PostInIP = @inPostInIP
+      AND PostTime >= DATEADD(MINUTE, -@V_TiempoLimite, GETDATE());
 
-    -- 3. Verificar si el conteo excede el límite
-    IF ( @V_FailedAttempts > @V_MaxIntentos )
+    -- Si superó el límite
+    IF (@V_FailedAttempts >= @V_MaxIntentos)
     BEGIN
-        SET @estaBlock = 1; -- Bloqueo activo
-    END;
-    
-END;
+        SET @estaBlock = 1;
 
+        -- Registrar el evento de bloqueo en bitácora
+        SET @V_Mensaje = 'Bloqueo de login: usuario ' + @inUsuario +
+                         ' desde IP ' + @inPostInIP +
+                         ' tras ' + CAST(@V_FailedAttempts AS NVARCHAR) + ' intentos fallidos';
+        EXEC sp_RegistrarEvento 4, @V_Mensaje, @V_IdUsuario, @inPostInIP;
+    END
+END;
+GO
