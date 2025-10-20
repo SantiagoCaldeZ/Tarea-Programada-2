@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Movimientos del Empleado</title>
+
+  <!-- Estilo general -->
+  <link rel="stylesheet" href="movimientos.css" />
+  
+  <!-- SweetAlert2 para mensajes -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+  <h1>Movimientos</h1>
+
+  <!-- Información del empleado -->
+  <div id="infoEmpleado" class="info-empleado"></div>
+
+  <!-- Tabla de movimientos -->
+  <div class="table-container">
+    <table id="tablaMovimientos">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo Movimiento</th>
+          <th>Monto</th>
+          <th>Nuevo Saldo</th>
+          <th>Usuario</th>
+          <th>IP</th>
+          <th>Hora Registro</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Botón para insertar movimiento -->
+  <div class="button-group">
+    <button id="btn-insertar-mov">INSERTAR MOVIMIENTO</button>
+  </div>
+
+  <script>
+    // Recupera el empleado almacenado al seleccionar en la lista anterior
+    const empleado = JSON.parse(sessionStorage.getItem("empleadoSeleccionado"));
+    const infoDiv = document.getElementById("infoEmpleado");
+
+    if (!empleado) {
+      Swal.fire("Error", "No hay empleado seleccionado", "error");
+    } else {
+      // Muestra información del empleado
+      infoDiv.innerHTML = `
+        <b>Documento:</b> ${empleado.ValorDocumentoIdentidad}<br>
+        <b>Nombre:</b> ${empleado.Nombre}<br>
+        <b>Saldo Vacaciones:</b> ${empleado.SaldoVacaciones}
+      `;
+      // Cargar movimientos del empleado
+      cargarMovimientos(empleado.Id);
+    }
+
+    // ====== CARGA DE MOVIMIENTOS ======
+    async function cargarMovimientos(id) {
+      try {
+        const response = await fetch(`/movimientos/${id}`);
+        const data = await response.json();
+
+        if (data.success) {
+          const tbody = document.querySelector("#tablaMovimientos tbody");
+          tbody.innerHTML = "";
+          data.data.forEach(mov => {
+            const fila = document.createElement("tr");
+            fila.innerHTML = `
+              <td>${mov.Fecha.split("T")[0]}</td>
+              <td>${mov.TipoMovimiento}</td>
+              <td>${mov.Monto}</td>
+              <td>${mov.NuevoSaldo}</td>
+              <td>${mov.Usuario}</td>
+              <td>${mov.PostInIP}</td>
+              <td>${new Date(mov.PostTime).toLocaleString()}</td>
+            `;
+            tbody.appendChild(fila);
+          });
+        } else {
+          Swal.fire("Error", data.message || "No se pudieron cargar los movimientos", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        Swal.fire("Error", "No se pudo conectar con el servidor", "error");
+      }
+    }
+
+    // ====== BOTÓN PARA INSERTAR NUEVO MOVIMIENTO ======
+    document.getElementById("btn-insertar-mov").addEventListener("click", () => {
+      localStorage.setItem("empleadoMovimiento", JSON.stringify(empleado));
+      window.location.href = "insertarMovimiento.html";
+    });
+  </script>
+</body>
+</html>
