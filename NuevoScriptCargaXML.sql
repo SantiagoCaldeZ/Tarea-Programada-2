@@ -2,26 +2,39 @@ SET NOCOUNT ON;
 
 DECLARE @XML AS XML;
 DECLARE @handle AS INT;
-DECLARE @outResultCode AS INT; --esta variable se va a usar en el SP que se llama mas adelante el cual que permite a SQL Server navegar por la estructura del XML como si fueran tablas relacionales
+DECLARE @outResultCode AS INT;
+--esta variable se va a usar en el SP que se llama mas adelante el cual que permite a SQL Server navegar por la estructura del XML como si fueran tablas relacionales
 
 -- Variables para el procesamiento de Movimientos
 DECLARE @T_Movimientos AS TABLE --tablas variables, segun el estandar del profe si se pueden usar. Esta alamacena los datos brutos del XML junto con claves y un numero de fila secuencial
-    ( RowNum INT PRIMARY KEY
-    , IdEmpleado INT
-    , IdTipoMovimiento INT
-    , TipoAccion VARCHAR(10)
-    , Fecha DATE
-    , Monto DECIMAL(10, 2)
-    , IdPostByUser INT
-    , PostInIP VARCHAR(50)
-    , PostTime DATETIME
-    );
+Â  Â  (
+    RowNum INT PRIMARY KEY
+Â  Â  ,
+    IdEmpleado INT
+Â  Â  ,
+    IdTipoMovimiento INT
+Â  Â  ,
+    TipoAccion VARCHAR(10)
+Â  Â  ,
+    Fecha DATE
+Â  Â  ,
+    Monto DECIMAL(10, 2)
+Â  Â  ,
+    IdPostByUser INT
+Â  Â  ,
+    PostInIP VARCHAR(50)
+Â  Â  ,
+    PostTime DATETIME
+Â  Â  );
 
 DECLARE @T_MovAcumulados AS TABLE --se usa para calcular el saldo por cada movimiento.
-    ( RowNum INT PRIMARY KEY
-    , IdEmpleado INT
-    , NuevoSaldo DECIMAL(10, 2)
-    );
+Â  Â  (
+    RowNum INT PRIMARY KEY
+Â  Â  ,
+    IdEmpleado INT
+Â  Â  ,
+    NuevoSaldo DECIMAL(10, 2)
+Â  Â  );
 
 
 --le asigna el contenido del XML a la variable @XML
@@ -35,9 +48,9 @@ SET @XML = N'<?xml version=''1.0''?>
 <Puesto Nombre="Asistente" SalarioxHora="11.00"/>
 <Puesto Nombre="Recepcionista" SalarioxHora="12.00"/>
 <Puesto Nombre="Fontanero" SalarioxHora="13.00"/>
-<Puesto Nombre="Niñera" SalarioxHora="12.00"/>
+<Puesto Nombre="NiÃ±era" SalarioxHora="12.00"/>
 <Puesto Nombre="Conserje" SalarioxHora="11.00"/>
-<Puesto Nombre="Albañil" SalarioxHora="10.50"/>
+<Puesto Nombre="AlbaÃ±il" SalarioxHora="10.50"/>
 </Puestos>
 <TiposEvento>
 <TipoEvento Id="1" Nombre="Login Exitoso"/>
@@ -76,13 +89,13 @@ SET @XML = N'<?xml version=''1.0''?>
 <errorCodigo Id="1" Codigo="50001" Descripcion="Username no existe"/>
 <errorCodigo Id="2" Codigo="50002" Descripcion="Password no existe"/>
 <errorCodigo Id="3" Codigo="50003" Descripcion="Login deshabilitado"/>
-<errorCodigo Id="4" Codigo="50004" Descripcion="Empleado con ValorDocumentoIdentidad ya existe en inserción"/>
-<errorCodigo Id="5" Codigo="50005" Descripcion="Empleado con mismo nombre ya existe en inserción"/>
+<errorCodigo Id="4" Codigo="50004" Descripcion="Empleado con ValorDocumentoIdentidad ya existe en inserciÃ³n"/>
+<errorCodigo Id="5" Codigo="50005" Descripcion="Empleado con mismo nombre ya existe en inserciÃ³n"/>
 <errorCodigo Id="6" Codigo="50006" Descripcion="Empleado con ValorDocumentoIdentidad ya existe en actualizacion"/>
-<errorCodigo Id="7" Codigo="50007" Descripcion="Empleado con mismo nombre ya existe en actualización"/>
+<errorCodigo Id="7" Codigo="50007" Descripcion="Empleado con mismo nombre ya existe en actualizaciÃ³n"/>
 <errorCodigo Id="8" Codigo="50008" Descripcion="Error de base de datos"/>
-<errorCodigo Id="9" Codigo="50009" Descripcion="Nombre de empleado no alfabético"/>
-<errorCodigo Id="10" Codigo="50010" Descripcion="Valor de documento de identidad no alfabético"/>
+<errorCodigo Id="9" Codigo="50009" Descripcion="Nombre de empleado no alfabÃ©tico"/>
+<errorCodigo Id="10" Codigo="50010" Descripcion="Valor de documento de identidad no alfabÃ©tico"/>
 <errorCodigo Id="11" Codigo="50011" Descripcion="Monto del movimiento rechazado pues si se aplicar el saldo seria negativo."/>
 </Error>
 <Empleados>
@@ -92,7 +105,7 @@ SET @XML = N'<?xml version=''1.0''?>
 <empleado Puesto="Recepcionista" ValorDocumentoIdentidad="99364103" Nombre="William Jenkins" FechaContratacion="2024-04-29"/>
 <empleado Puesto="Conductor" ValorDocumentoIdentidad="23357035" Nombre="Nathan Lee" FechaContratacion="2021-07-25"/>
 <empleado Puesto="Asistente" ValorDocumentoIdentidad="44223318" Nombre="Gerald Ponce" FechaContratacion="2022-10-27"/>
-<empleado Puesto="Albañil" ValorDocumentoIdentidad="1463670" Nombre="Matthew Martin" FechaContratacion="2025-08-15"/>
+<empleado Puesto="AlbaÃ±il" ValorDocumentoIdentidad="1463670" Nombre="Matthew Martin" FechaContratacion="2025-08-15"/>
 <empleado Puesto="Fontanero" ValorDocumentoIdentidad="25008030" Nombre="Matthew Rodriguez" FechaContratacion="2025-08-03"/>
 <empleado Puesto="Cuidador" ValorDocumentoIdentidad="25381150" Nombre="Crystal Mills" FechaContratacion="2021-05-13"/>
 <empleado Puesto="Recepcionista" ValorDocumentoIdentidad="6402399" Nombre="Shane Robinson" FechaContratacion="2025-03-13"/>
@@ -101,7 +114,7 @@ SET @XML = N'<?xml version=''1.0''?>
 <empleado Puesto="Asistente" ValorDocumentoIdentidad="21169228" Nombre="Hannah Peterson" FechaContratacion="2022-04-27"/>
 <empleado Puesto="Conserje" ValorDocumentoIdentidad="44454429" Nombre="Antonio Wallace" FechaContratacion="2022-05-10"/>
 <empleado Puesto="Cuidador" ValorDocumentoIdentidad="25090046" Nombre="Patricia Richardson" FechaContratacion="2024-06-21"/>
-<empleado Puesto="Albañil" ValorDocumentoIdentidad="17308111" Nombre="Mr. Mark Nguyen" FechaContratacion="2022-11-29"/>
+<empleado Puesto="AlbaÃ±il" ValorDocumentoIdentidad="17308111" Nombre="Mr. Mark Nguyen" FechaContratacion="2022-11-29"/>
 <empleado Puesto="Conserje" ValorDocumentoIdentidad="74794219" Nombre="Randy Hale" FechaContratacion="2025-03-22"/>
 <empleado Puesto="Cuidador" ValorDocumentoIdentidad="21086955" Nombre="Christopher Coffey" FechaContratacion="2019-09-05"/>
 <empleado Puesto="Recepcionista" ValorDocumentoIdentidad="28280052" Nombre="Dwayne Medina" FechaContratacion="2024-08-04"/>
@@ -205,227 +218,234 @@ SET @XML = N'<?xml version=''1.0''?>
 </Datos>';
 
 
-EXEC sp_xml_preparedocument --se llama al SP del sistema que analiza el XML y prepara una estructura de nodos a la que se puede acceder mediante OPENXML o el método nodes()
-     @handle OUTPUT
-    , @XML;
+EXEC sp_xml_preparedocument --se llama al SP del sistema que analiza el XML y prepara una estructura de nodos a la que se puede acceder mediante OPENXML o el mÃ©todo nodes()
+Â  Â  Â @handle OUTPUT
+Â  Â  , @XML;
 
 BEGIN TRY
     
     PRINT 'Inicio del try';
 
-    BEGIN TRANSACTION;
+Â  Â  BEGIN TRANSACTION;
     PRINT 'Transaccion Iniciada';
     
-    --Catalogos:
+Â  Â  --Catalogos:
     SET IDENTITY_INSERT dbo.error OFF; --esta linea se coloco ya que daba un error
-    -- Tipos de Evento
-    SET IDENTITY_INSERT dbo.TipoEvento ON;
-    
-    INSERT INTO dbo.TipoEvento
-        ( Id
-        , Nombre
-        )
-    SELECT
-          T.Item.value('@Id', 'INT')        AS Id
-        , T.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
-    FROM 
-        @XML.nodes('/Datos/TiposEvento/TipoEvento') AS T(Item)
-    
-    WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id FROM dbo.TipoEvento); 
-    PRINT 'TipoEvento: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
-    SET IDENTITY_INSERT dbo.TipoEvento OFF;
-    
-    -- Tipos de Movimiento
-    SET IDENTITY_INSERT dbo.TipoMovimiento ON;
-    
-    INSERT INTO dbo.TipoMovimiento
-        ( Id
-        , Nombre
-        , TipoAccion
-        )
-    SELECT
-          T.Item.value('@Id', 'INT')        AS Id
-        , T.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
-        , T.Item.value('@TipoAccion', 'VARCHAR(10)') AS TipoAccion
-    FROM 
-        @XML.nodes('/Datos/TiposMovimientos/TipoMovimiento') AS T(Item)
-    
-    WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id FROM dbo.TipoMovimiento);
-    PRINT 'TipoMovimiento: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
-    SET IDENTITY_INSERT dbo.TipoMovimiento OFF;
-    
-    -- Usuarios
-    SET IDENTITY_INSERT dbo.Usuario ON;
-    
-    INSERT INTO dbo.Usuario
-        ( Id
-        , Username
-        , [Password] 
-        )
-    SELECT
-          T.Item.value('@Id', 'INT')        AS Id
-        , T.Item.value('@Nombre', 'VARCHAR(50)') AS Username
-        , T.Item.value('@Pass', 'VARCHAR(100)') AS [Password]
-    FROM 
-        @XML.nodes('/Datos/Usuarios/usuario') AS T(Item)
-    
-    WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id FROM dbo.Usuario);
-    PRINT 'Usuario: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
-    SET IDENTITY_INSERT dbo.Usuario OFF;
-    
-    -- Errores
-    SET IDENTITY_INSERT dbo.Error ON;
-    
-    INSERT INTO dbo.Error
-        ( Id
-        , Codigo
-        , Descripcion
-        )
-    SELECT
-          T.Item.value('@Id', 'INT')        AS Id
-        , T.Item.value('@Codigo', 'VARCHAR(10)') AS Codigo
-        , T.Item.value('@Descripcion', 'VARCHAR(255)') AS Descripcion
-    FROM 
-        @XML.nodes('/Datos/Error/errorCodigo') AS T(Item)
-  
-    WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id FROM dbo.Error);
-    PRINT 'Error Catalogo: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
-    SET IDENTITY_INSERT dbo.Error OFF;
-    
+Â  Â  -- Tipos de Evento
+Â  Â  SET IDENTITY_INSERT dbo.TipoEvento ON;
+Â  Â Â 
+Â  Â  INSERT INTO dbo.TipoEvento
+    ( Id
+    , Nombre
+    )
+SELECT
+    T.Item.value('@Id', 'INT')Â  Â  Â  Â  AS Id
+Â  Â  Â  Â  , T.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
+FROM
+    @XML.nodes('/Datos/TiposEvento/TipoEvento') AS T(Item)
 
-    -- CARGA DE PUESTOS
-    
-    INSERT INTO dbo.Puesto
-        ( Nombre
-        , SalarioxHora
-        )
-    SELECT
-          T.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
-        , T.Item.value('@SalarioxHora', 'DECIMAL(10, 2)') AS SalarioxHora
-    FROM 
-        @XML.nodes('/Datos/Puestos/Puesto') AS T(Item)
-    
-    WHERE T.Item.value('@Nombre', 'VARCHAR(100)') NOT IN (SELECT Nombre FROM dbo.Puesto);
+WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id
+FROM dbo.TipoEvento); 
+    PRINT 'TipoEvento: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
+Â  Â  SET IDENTITY_INSERT dbo.TipoEvento OFF;
+Â  Â Â 
+Â  Â  -- Tipos de Movimiento
+Â  Â  SET IDENTITY_INSERT dbo.TipoMovimiento ON;
+Â  Â Â 
+Â  Â  INSERT INTO dbo.TipoMovimiento
+    ( Id
+    , Nombre
+    , TipoAccion
+    )
+SELECT
+    T.Item.value('@Id', 'INT')Â  Â  Â  Â  AS Id
+Â  Â  Â  Â  , T.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
+Â  Â  Â  Â  , T.Item.value('@TipoAccion', 'VARCHAR(10)') AS TipoAccion
+FROM
+    @XML.nodes('/Datos/TiposMovimientos/TipoMovimiento') AS T(Item)
+
+WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id
+FROM dbo.TipoMovimiento);
+    PRINT 'TipoMovimiento: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
+Â  Â  SET IDENTITY_INSERT dbo.TipoMovimiento OFF;
+Â  Â Â 
+Â  Â  -- Usuarios
+Â  Â  SET IDENTITY_INSERT dbo.Usuario ON;
+Â  Â Â 
+Â  Â  INSERT INTO dbo.Usuario
+    ( Id
+    , Username
+    , [Password]
+    )
+SELECT
+    T.Item.value('@Id', 'INT')Â  Â  Â  Â  AS Id
+Â  Â  Â  Â  , T.Item.value('@Nombre', 'VARCHAR(50)') AS Username
+Â  Â  Â  Â  , T.Item.value('@Pass', 'VARCHAR(100)') AS [Password]
+FROM
+    @XML.nodes('/Datos/Usuarios/usuario') AS T(Item)
+
+WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id
+FROM dbo.Usuario);
+    PRINT 'Usuario: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
+Â  Â  SET IDENTITY_INSERT dbo.Usuario OFF;
+Â  Â Â 
+Â  Â  -- Errores
+Â  Â  SET IDENTITY_INSERT dbo.Error ON;
+Â  Â Â 
+Â  Â  INSERT INTO dbo.Error
+    ( Id
+    , Codigo
+    , Descripcion
+    )
+SELECT
+    T.Item.value('@Id', 'INT')Â  Â  Â  Â  AS Id
+Â  Â  Â  Â  , T.Item.value('@Codigo', 'VARCHAR(10)') AS Codigo
+Â  Â  Â  Â  , T.Item.value('@Descripcion', 'VARCHAR(255)') AS Descripcion
+FROM
+    @XML.nodes('/Datos/Error/errorCodigo') AS T(Item)
+
+WHERE T.Item.value('@Id', 'INT') NOT IN (SELECT Id
+FROM dbo.Error);
+    PRINT 'Error Catalogo: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
+Â  Â  SET IDENTITY_INSERT dbo.Error OFF;
+Â  Â Â 
+
+Â  Â  -- CARGA DE PUESTOS
+Â  Â Â 
+Â  Â  INSERT INTO dbo.Puesto
+    ( Nombre
+    , SalarioxHora
+    )
+SELECT
+    T.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
+Â  Â  Â  Â  , T.Item.value('@SalarioxHora', 'DECIMAL(10, 2)') AS SalarioxHora
+FROM
+    @XML.nodes('/Datos/Puestos/Puesto') AS T(Item)
+
+WHERE T.Item.value('@Nombre', 'VARCHAR(100)') NOT IN (SELECT Nombre
+FROM dbo.Puesto);
     PRINT 'Puesto: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
 
-    -- CARGA DE EMPLEADOS
-    
-    INSERT INTO dbo.Empleado
-        ( IdPuesto
-        , ValorDocumentoIdentidad
-        , Nombre
-        , FechaContratacion
-        , SaldoVacaciones
-        , EsActivo
-        )
-    SELECT
-          P.Id                                    AS IdPuesto
-        , E.Item.value('@ValorDocumentoIdentidad', 'VARCHAR(20)') AS ValorDocumentoIdentidad
-        , E.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
-        , E.Item.value('@FechaContratacion', 'DATE') AS FechaContratacion
-        , 0                                        AS SaldoVacaciones 
-        , 1                                        AS EsActivo          
-    FROM 
-        @XML.nodes('/Datos/Empleados/empleado') AS E(Item)
-    INNER JOIN 
-        dbo.Puesto AS P 
-    ON 
-        ( P.Nombre = E.Item.value('@Puesto', 'VARCHAR(100)') )
-    
-    WHERE E.Item.value('@ValorDocumentoIdentidad', 'VARCHAR(20)') NOT IN (SELECT ValorDocumentoIdentidad FROM dbo.Empleado);
+Â  Â  -- CARGA DE EMPLEADOS
+Â  Â Â 
+Â  Â  INSERT INTO dbo.Empleado
+    ( IdPuesto
+    , ValorDocumentoIdentidad
+    , Nombre
+    , FechaContratacion
+    , SaldoVacaciones
+    , EsActivo
+    )
+SELECT
+    P.IdÂ  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  AS IdPuesto
+Â  Â  Â  Â  , E.Item.value('@ValorDocumentoIdentidad', 'VARCHAR(20)') AS ValorDocumentoIdentidad
+Â  Â  Â  Â  , E.Item.value('@Nombre', 'VARCHAR(100)') AS Nombre
+Â  Â  Â  Â  , E.Item.value('@FechaContratacion', 'DATE') AS FechaContratacion
+Â  Â  Â  Â  , 0Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  AS SaldoVacacionesÂ 
+Â  Â  Â  Â  , 1Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  AS EsActivo
+FROM
+    @XML.nodes('/Datos/Empleados/empleado') AS E(Item)
+    INNER JOIN
+    dbo.Puesto AS P
+    ONÂ 
+Â  Â  Â  Â  ( P.Nombre = E.Item.value('@Puesto', 'VARCHAR(100)') )
+
+WHERE E.Item.value('@ValorDocumentoIdentidad', 'VARCHAR(20)') NOT IN (SELECT ValorDocumentoIdentidad
+FROM dbo.Empleado);
     PRINT 'Empleado: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
-    
-    -- Precarga de movimientos en tabla variable y ordenamiento secuencial 
-    INSERT INTO @T_Movimientos
-        ( RowNum, IdEmpleado, IdTipoMovimiento, TipoAccion, Fecha, Monto, IdPostByUser, PostInIP, PostTime )
-    SELECT
-          ROW_NUMBER() OVER (ORDER BY M.Item.value('@PostTime', 'DATETIME'), M.Item.value('@ValorDocId', 'VARCHAR(20)')) AS RowNum --asigna un número secuencial (RowNum) a cada movimiento, asegurando que el orden de procesamiento sea por fecha y hora de registro
-        , E.Id, TM.Id, TM.TipoAccion
-        , M.Item.value('@Fecha', 'DATE')
-        , M.Item.value('@Monto', 'DECIMAL(10, 2)')
-        , U.Id
-        , M.Item.value('@PostInIP', 'VARCHAR(50)')
-        , M.Item.value('@PostTime', 'DATETIME')
-    FROM 
-        @XML.nodes('/Datos/Movimientos/movimiento') AS M(Item)
-    INNER JOIN dbo.Empleado AS E ON ( E.ValorDocumentoIdentidad = M.Item.value('@ValorDocId', 'VARCHAR(20)') )
-    INNER JOIN dbo.TipoMovimiento AS TM ON ( TM.Id = M.Item.value('@IdTipoMovimiento', 'INT') )
-    INNER JOIN dbo.Usuario AS U ON ( U.Username = M.Item.value('@PostByUser', 'VARCHAR(50)') );
+Â  Â Â 
+Â  Â  -- Precarga de movimientos en tabla variable y ordenamiento secuencialÂ 
+Â  Â  INSERT INTO @T_Movimientos
+    ( RowNum, IdEmpleado, IdTipoMovimiento, TipoAccion, Fecha, Monto, IdPostByUser, PostInIP, PostTime )
+SELECT
+    ROW_NUMBER() OVER (ORDER BY M.Item.value('@PostTime', 'DATETIME'), M.Item.value('@ValorDocId', 'VARCHAR(20)')) AS RowNum --asigna un nÃºmero secuencial (RowNum) a cada movimiento, asegurando que el orden de procesamiento sea por fecha y hora de registro
+Â  Â  Â  Â  , E.Id, TM.Id, TM.TipoAccion
+Â  Â  Â  Â  , M.Item.value('@Fecha', 'DATE')
+Â  Â  Â  Â  , M.Item.value('@Monto', 'DECIMAL(10, 2)')
+Â  Â  Â  Â  , U.Id
+Â  Â  Â  Â  , M.Item.value('@PostInIP', 'VARCHAR(50)')
+Â  Â  Â  Â  , M.Item.value('@PostTime', 'DATETIME')
+FROM
+    @XML.nodes('/Datos/Movimientos/movimiento') AS M(Item)
+    INNER JOIN dbo.Empleado AS E ON ( E.ValorDocumentoIdentidad = M.Item.value('@ValorDocId', 'VARCHAR(20)') )
+    INNER JOIN dbo.TipoMovimiento AS TM ON ( TM.Id = M.Item.value('@IdTipoMovimiento', 'INT') )
+    INNER JOIN dbo.Usuario AS U ON ( U.Username = M.Item.value('@PostByUser', 'VARCHAR(50)') );
     
     
-    DECLARE @MovRows INT = (SELECT COUNT(*) FROM @T_Movimientos);
+    DECLARE @MovRows INT = (SELECT COUNT(*)
+FROM @T_Movimientos);
     PRINT 'Movimientos Precargados (@T_Movimientos): ' + CAST(@MovRows AS VARCHAR(10)) + ' filas.';
 
     IF @MovRows = 0
     BEGIN
-        PRINT 'ADVERTENCIA: 0 Movimientos cargados';
-    END
+    PRINT 'ADVERTENCIA: 0 Movimientos cargados';
+END
 
 
 -- Calcular el saldo acumulado para cada movimiento
-INSERT INTO @T_MovAcumulados 
-    ( RowNum, IdEmpleado, NuevoSaldo )
+INSERT INTO @T_MovAcumulados
+    ( RowNum, IdEmpleado, NuevoSaldo )
 SELECT
-    T.RowNum,
-    T.IdEmpleado,
-    SUM( --convierto los montos a positivos o negativos segun si es credito o debito
-        CASE T.TipoAccion
-            WHEN 'Credito' THEN T.Monto
-            WHEN 'Debito' THEN -T.Monto 
-            ELSE 0
-        END
-    ) OVER (
-        PARTITION BY T.IdEmpleado 
-        ORDER BY T.PostTime, T.RowNum 
-        ROWS UNBOUNDED PRECEDING
-    ) AS NuevoSaldo
-FROM 
-    @T_Movimientos AS T
+    T.RowNum,
+    T.IdEmpleado,
+    SUM( --convierto los montos a positivos o negativos segun si es credito o debito
+Â  Â  Â  Â  CASE T.TipoAccion
+Â  Â  Â  Â  Â  Â  WHEN 'Credito' THEN T.Monto
+Â  Â  Â  Â  Â  Â  WHEN 'Debito' THEN -T.MontoÂ 
+Â  Â  Â  Â  Â  Â  ELSE 0
+Â  Â  Â  Â  END
+Â  Â  ) OVER (
+Â  Â  Â  Â  PARTITION BY T.IdEmpleadoÂ 
+Â  Â  Â  Â  ORDER BY T.PostTime, T.RowNumÂ 
+Â  Â  Â  Â  ROWS UNBOUNDED PRECEDING
+Â  Â  ) AS NuevoSaldo
+FROM
+    @T_Movimientos AS T
 ORDER BY T.RowNum;
 
 
---Actualizar el saldo final en la tabla principal (solo la última fila de cada empleado)
-UPDATE 
-    E
-SET 
-    E.SaldoVacaciones = T_Max.NuevoSaldo
-FROM 
-    dbo.Empleado AS E
-INNER JOIN 
-    (
-        SELECT
-            MA.IdEmpleado,
-            MA.NuevoSaldo,
-            ROW_NUMBER() OVER (PARTITION BY MA.IdEmpleado ORDER BY MA.RowNum DESC) AS rn
-        FROM 
-            @T_MovAcumulados AS MA
-    ) AS T_Max
-ON 
-    ( T_Max.IdEmpleado = E.Id )
+--Actualizar el saldo final en la tabla principal (solo la Ãºltima fila de cada empleado)
+UPDATEÂ 
+Â  Â  E
+SETÂ 
+Â  Â  E.SaldoVacaciones = T_Max.NuevoSaldo
+FROM
+    dbo.Empleado AS E
+    INNER JOIN
+    (
+Â  Â  Â  Â  SELECT
+        MA.IdEmpleado,
+        MA.NuevoSaldo,
+        ROW_NUMBER() OVER (PARTITION BY MA.IdEmpleado ORDER BY MA.RowNum DESC) AS rn
+    FROM
+        @T_MovAcumulados AS MA
+Â  Â  ) AS T_Max
+    ONÂ 
+Â  Â  ( T_Max.IdEmpleado = E.Id )
 WHERE
-    ( T_Max.rn = 1 );
+Â  Â  ( T_Max.rn = 1 );
 PRINT 'Empleado.SaldoVacaciones: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas actualizadas.';
-    
+Â  Â Â 
 
-    INSERT INTO dbo.Movimiento 
-        ( IdEmpleado, IdTipoMovimiento, Fecha, Monto, NuevoSaldo, IdPostByUser, PostInIP, PostTime )
-    SELECT
-          T.IdEmpleado, T.IdTipoMovimiento, T.Fecha, T.Monto
-        , MA.NuevoSaldo
-        , T.IdPostByUser, T.PostInIP, T.PostTime
-    FROM 
-        @T_Movimientos AS T
-    INNER JOIN 
-        @T_MovAcumulados AS MA 
-    ON 
-        ( MA.RowNum = T.RowNum );
+Â  Â  INSERT INTO dbo.Movimiento
+    ( IdEmpleado, IdTipoMovimiento, Fecha, Monto, NuevoSaldo, IdPostByUser, PostInIP, PostTime )
+SELECT
+    T.IdEmpleado, T.IdTipoMovimiento, T.Fecha, T.Monto
+Â  Â  Â  Â  , MA.NuevoSaldo
+Â  Â  Â  Â  , T.IdPostByUser, T.PostInIP, T.PostTime
+FROM
+    @T_Movimientos AS T
+    INNER JOIN
+    @T_MovAcumulados AS MA
+    ONÂ 
+Â  Â  Â  Â  ( MA.RowNum = T.RowNum );
     PRINT 'Movimiento Final: ' + CAST(@@ROWCOUNT AS VARCHAR(10)) + ' filas insertadas.';
 
-    -- Finalizar la transacción
-    COMMIT TRANSACTION; --si todo sale bien se hace el commit transaction
+Â  Â  -- Finalizar la transacciÃ³n
+Â  Â  COMMIT TRANSACTION; --si todo sale bien se hace el commit transaction
     PRINT 'Transaccion completa';
-    SELECT @outResultCode = 0;
-    
+Â  Â  SELECT @outResultCode = 0;
+Â  Â Â 
 
 END TRY
 BEGIN CATCH
@@ -437,26 +457,27 @@ BEGIN CATCH
     PRINT 'Linea de Error: ' + CAST(ERROR_LINE() AS VARCHAR(10));
     PRINT 'Mensaje de Error: ' + ERROR_MESSAGE();
     
-    IF ( @@TRANCOUNT > 0 )
-    BEGIN
-        ROLLBACK TRANSACTION; --si hay un errr hace un rollback
-        PRINT 'rollback Ejecutado.';
-    END;
-    
-    -- Insertar en tabla de errores
-    INSERT INTO dbo.DBError 
-        ( UserName, Number, State, Severity, Line, [Procedure], Message, [DateTime] )
-    VALUES 
-        ( SUSER_SNAME(), ERROR_NUMBER(), ERROR_STATE(), ERROR_SEVERITY(), ERROR_LINE(), 
-          ISNULL(ERROR_PROCEDURE(), 'Ad-Hoc Batch'), ERROR_MESSAGE(), GETDATE() )
-        
-    SELECT @outResultCode = 50008; 
-    
+Â  Â  IF ( @@TRANCOUNT > 0 )
+Â  Â  BEGIN
+    ROLLBACK TRANSACTION;
+    --si hay un errr hace un rollback
+    PRINT 'rollback Ejecutado.';
+END;
+Â  Â Â 
+Â  Â  -- Insertar en tabla de errores
+Â  Â  INSERT INTO dbo.DBError
+    ( UserName, Number, State, Severity, Line, [Procedure], Message, [DateTime] )
+VALUES
+    ( SUSER_SNAME(), ERROR_NUMBER(), ERROR_STATE(), ERROR_SEVERITY(), ERROR_LINE(),
+        ISNULL(ERROR_PROCEDURE(), 'Ad-Hoc Batch'), ERROR_MESSAGE(), GETDATE() )
+Â  Â  Â  Â Â 
+Â  Â  SELECT @outResultCode = 50008;Â 
+Â  Â Â 
 END CATCH;
 
 -- LIMPIEZA FINAL
 IF ( @handle IS NOT NULL )
 BEGIN
-    EXEC sp_xml_removedocument --Libera la memoria utilizada por SQL Server.
-          @handle;
+    EXEC sp_xml_removedocument --Libera la memoria utilizada por SQL Server.
+Â  Â  Â  Â  Â  @handle;
 END;
