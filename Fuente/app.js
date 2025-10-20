@@ -241,6 +241,90 @@ app.post("/empleados-modificar", async (req, res) => {
   }
 });
 
+// ======================== LISTAR MOVIMIENTOS ========================
+app.get("/movimientos/:idEmpleado", async (req, res) => {
+  const { idEmpleado } = req.params;
+
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+
+    request.input("IdEmpleado", sql.Int, idEmpleado);
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_ListarMovimientos");
+    const codigo = result.output.outCodigo;
+
+    if (codigo === 0) {
+      res.json({ success: true, data: result.recordset });
+    } else if (codigo === 50021) {
+      res.json({ success: false, message: "El empleado no existe o está inactivo" });
+    } else {
+      res.json({ success: false, message: "Error al listar movimientos" });
+    }
+  } catch (err) {
+    console.error("Error en /movimientos/:idEmpleado:", err);
+    if (err?.originalError?.info)
+      console.error("SQL info:", err.originalError.info);
+
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
+// ======================== OBTENER TIPOS DE MOVIMIENTO ========================
+app.get("/tipos-movimiento", async (req, res) => {
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_ObtenerTiposMovimiento");
+
+    if (result.recordset && result.recordset.length > 0) {
+      res.json({ success: true, data: result.recordset });
+    } else {
+      res.json({ success: false, message: "No se encontraron tipos de movimiento" });
+    }
+  } catch (err) {
+    console.error("Error en /tipos-movimiento:", err);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
+
+// ======================== INSERTAR MOVIMIENTO ========================
+app.post("/movimientos-insertar", async (req, res) => {
+  const { idEmpleado, idTipoMovimiento, monto, idUsuario, ip } = req.body;
+  try {
+    let pool = await sql.connect(dbConfig);
+    let request = pool.request();
+
+    request.input("IdEmpleado", sql.Int, idEmpleado);
+    request.input("IdTipoMovimiento", sql.Int, idTipoMovimiento);
+    request.input("Monto", sql.Float, monto);
+    request.input("IdPostByUser", sql.Int, idUsuario || 1);
+    request.input("PostInIP", sql.VarChar, ip || "127.0.0.1");
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_InsertarMovimiento");
+    const codigo = result.output.outCodigo;
+
+    if (codigo === 0)
+      res.json({ success: true });
+    else if (codigo === 50031)
+      res.json({ success: false, message: "El empleado no existe o está inactivo." });
+    else if (codigo === 50032)
+      res.json({ success: false, message: "Tipo de movimiento inválido." });
+    else if (codigo === 50033)
+      res.json({ success: false, message: "El monto haría negativo el saldo." });
+    else
+      res.json({ success: false, message: "Error inesperado al insertar movimiento." });
+  } catch (err) {
+    console.error("Error en /movimientos-insertar:", err);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
+});
+
 // ======================== SERVIDOR ========================
 app.listen(port, () => {
     console.log(`Servidor corriendo en http://localhost:${port}`);
