@@ -122,6 +122,8 @@
             Swal.fire("Error", "No se pudo aplicar el filtro", "error");
         }
     });
+    
+    
 
     // Buscar con Enter
     document.getElementById("searchInput").addEventListener("keypress", (e) => {
@@ -212,10 +214,49 @@
     }
     
     function listarMovimientos() {
-      Swal.fire("Movimientos", `Mostrando movimientos de ${empleadoActual.Nombre}`, "info");
+      if (!empleadoActual) {
+        Swal.fire("Error", "Debe seleccionar un empleado.", "error");
+        return;
+      }
+
+      // Cierra el modal antes de continuar
+      document.getElementById("modalAcciones").style.display = "none";
+
+      // Guarda el empleado en sessionStorage
+      sessionStorage.setItem("empleadoSeleccionado", JSON.stringify(empleadoActual));
+
+      // Muestra alerta y redirige
+      Swal.fire({
+        title: "Movimientos",
+        text: `Mostrando movimientos de ${empleadoActual.Nombre}`,
+        icon: "info",
+        confirmButtonText: "Ir a la lista"
+      }).then(() => {
+        window.location.href = "movimientos.html";
+      });
     }
+
     function insertarMovimiento() {
-      Swal.fire("Insertar Movimiento", `Insertando movimiento para ${empleadoActual.Nombre}`, "info");
+      if (!empleadoActual) {
+        Swal.fire("Error", "Debe seleccionar un empleado.", "error");
+        return;
+      }
+
+      // Cerrar el modal antes de continuar
+      document.getElementById("modalAcciones").style.display = "none";
+
+      // Guardar empleado en sessionStorage
+      sessionStorage.setItem("empleadoSeleccionado", JSON.stringify(empleadoActual));
+
+      // Mostrar alerta y redirigir
+      Swal.fire({
+        title: "Insertar Movimiento",
+        text: `Creando movimiento para ${empleadoActual.Nombre}`,
+        icon: "info",
+        confirmButtonText: "Continuar"
+      }).then(() => {
+        window.location.href = "insertarMovimiento.html";
+      });
     }
 
     // Al cargar la página
