@@ -15,13 +15,15 @@ BEGIN
             @PuestoAntiguo NVARCHAR(64),
             @SaldoVacaciones MONEY,
             @PuestoNuevo NVARCHAR(64),
-            @Descripcion NVARCHAR(256);
+            @Descripcion NVARCHAR(400);
 
     BEGIN TRY
-        -- Verificar existencia del empleado activo
+        -- 1️⃣ Validar existencia
         IF NOT EXISTS (SELECT 1 FROM Empleado WHERE Id = @IdEmpleado AND EsActivo = 1)
         BEGIN
-            SET @outCodigo = 50001; -- No existe
+            SET @outCodigo = 50001;
+            SET @Descripcion = 'Error 50001: intento de modificar empleado inexistente (Id=' + CAST(@IdEmpleado AS NVARCHAR(10)) + ')';
+            EXEC sp_RegistrarEvento 4, @Descripcion, @IdPostByUser, @PostInIP;
             RETURN;
         END
 
@@ -35,37 +37,33 @@ BEGIN
         INNER JOIN Puesto p ON e.IdPuesto = p.Id
         WHERE e.Id = @IdEmpleado;
 
-        -- Validar duplicado de documento (solo entre empleados activos)
+        -- 2️⃣ Validar duplicado de documento
         IF @NuevoDocumento IS NOT NULL AND EXISTS (
-            SELECT 1 
-            FROM Empleado 
-            WHERE ValorDocumentoIdentidad = @NuevoDocumento 
-              AND Id <> @IdEmpleado
-              AND EsActivo = 1
+            SELECT 1 FROM Empleado
+            WHERE ValorDocumentoIdentidad = @NuevoDocumento
+              AND Id <> @IdEmpleado AND EsActivo = 1
         )
         BEGIN
-            SET @outCodigo = 50002; -- Documento duplicado
-            SET @Descripcion = CONCAT('Error: Documento duplicado (activo). Intento cambiar ', @DocumentoAntiguo, ' → ', @NuevoDocumento);
-            EXEC sp_RegistrarEvento 6, @Descripcion, @IdPostByUser, @PostInIP; -- Update No Exitoso
+            SET @outCodigo = 50002;
+            SET @Descripcion = 'Error 50002: documento duplicado (' + @DocumentoAntiguo + ' → ' + @NuevoDocumento + ')';
+            EXEC sp_RegistrarEvento 4, @Descripcion, @IdPostByUser, @PostInIP;
             RETURN;
         END
 
-        -- Validar duplicado de nombre (solo entre empleados activos)
+        -- 3️⃣ Validar duplicado de nombre
         IF @NuevoNombre IS NOT NULL AND EXISTS (
-            SELECT 1 
-            FROM Empleado 
-            WHERE Nombre = @NuevoNombre 
-              AND Id <> @IdEmpleado
-              AND EsActivo = 1
+            SELECT 1 FROM Empleado
+            WHERE Nombre = @NuevoNombre
+              AND Id <> @IdEmpleado AND EsActivo = 1
         )
         BEGIN
-            SET @outCodigo = 50003; -- Nombre duplicado
-            SET @Descripcion = CONCAT('Error: Nombre duplicado (activo). Intento cambiar ', @NombreAntiguo, ' → ', @NuevoNombre);
-            EXEC sp_RegistrarEvento 6, @Descripcion, @IdPostByUser, @PostInIP;
+            SET @outCodigo = 50003;
+            SET @Descripcion = 'Error 50003: nombre duplicado (' + @NombreAntiguo + ' → ' + @NuevoNombre + ')';
+            EXEC sp_RegistrarEvento 4, @Descripcion, @IdPostByUser, @PostInIP;
             RETURN;
         END
 
-        -- 🔹 Actualizar solo los campos que no estén nulos
+        -- 4️⃣ Actualizar
         UPDATE Empleado
         SET 
             Nombre = ISNULL(@NuevoNombre, Nombre),
@@ -73,37 +71,27 @@ BEGIN
             IdPuesto = ISNULL(@NuevoIdPuesto, IdPuesto)
         WHERE Id = @IdEmpleado;
 
-        -- Obtener nombre del nuevo puesto
+        -- 5️⃣ Obtener nuevo puesto para bitácora
         SELECT @PuestoNuevo = p.Nombre
         FROM Puesto p
         INNER JOIN Empleado e ON e.IdPuesto = p.Id
         WHERE e.Id = @IdEmpleado;
 
-        -- Registrar en BitácoraEvento (Update Exitoso)
-        SET @Descripcion = CONCAT(
-            'Antes: ', @DocumentoAntiguo, ', ', @NombreAntiguo, ', ', @PuestoAntiguo,
-            ' | Después: ', ISNULL(@NuevoDocumento, @DocumentoAntiguo), ', ',
-            ISNULL(@NuevoNombre, @NombreAntiguo), ', ',
-            @PuestoNuevo, '. Saldo ', @SaldoVacaciones
-        );
-        EXEC sp_RegistrarEvento 7, @Descripcion, @IdPostByUser, @PostInIP;
+        -- 6️⃣ Registrar éxito
+        SET @Descripcion = 'Empleado modificado correctamente. Antes: ' +
+                           @DocumentoAntiguo + ', ' + @NombreAntiguo + ', ' + @PuestoAntiguo +
+                           ' | Después: ' + ISNULL(@NuevoDocumento, @DocumentoAntiguo) + ', ' +
+                           ISNULL(@NuevoNombre, @NombreAntiguo) + ', ' +
+                           @PuestoNuevo + '. Saldo=' + CAST(@SaldoVacaciones AS NVARCHAR(20));
+        EXEC sp_RegistrarEvento 3, @Descripcion, @IdPostByUser, @PostInIP;
 
-        SET @outCodigo = 0; -- Éxito
+        SET @outCodigo = 0;
     END TRY
+
     BEGIN CATCH
-        SET @outCodigo = 50020; -- Error inesperado
-
-        DECLARE @Err NVARCHAR(400);
-        SET @Err = ERROR_MESSAGE();
-
-        DECLARE @DescripcionError NVARCHAR(400);
-        SET @DescripcionError = 'Error inesperado: ' + ISNULL(@Err, 'Desconocido');
-
-        EXEC sp_RegistrarEvento 
-            @IdTipoEvento = 6, 
-            @Descripcion = @DescripcionError, 
-            @IdPostByUser = @IdPostByUser, 
-            @PostInIP = @PostInIP;
+        SET @outCodigo = 50020;
+        SET @Descripcion = 'Error 50020: excepción en sp_ModificarEmpleado (' + ERROR_MESSAGE() + ')';
+        EXEC sp_RegistrarEvento 4, @Descripcion, @IdPostByUser, @PostInIP;
     END CATCH
-END
+END;
 GO

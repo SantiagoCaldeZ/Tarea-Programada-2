@@ -2,7 +2,7 @@ const express = require("express");
 const sql = require("mssql");
 const path = require("path");
 
-const dbConfig = {
+const dbconfig = {
     user: "bdsc",
     password: "Franco2025",
     server: "francobd12025.database.windows.net",
@@ -20,45 +20,76 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ======================== LOGIN ========================
+// ======================== LOGIN (modo debug) ========================
+// ======================== LOGIN ========================
 app.post("/login", async (req, res) => {
+  try {
     const { usuario, contrasena } = req.body;
+    const ip = req.ip || req.connection.remoteAddress || "127.0.0.1";
+    const pool = await sql.connect(dbconfig);
 
-    const clientIp = req.socket.remoteAddress || req.ip || "Unknown IP";
-    console.log(clientIp)
-    try {
-        let pool = await sql.connect(dbConfig);
-        let request = pool.request();
-        request.input("inUsuario", sql.NVarChar, usuario);
-        request.input("inPassword", sql.NVarChar, contrasena);
-        request.input("inPostInIP", sql.VarChar, clientIp);
-        request.output("outCodigo", sql.Int);
+    // 🧱 Primero verificamos si está bloqueado
+    const check = pool.request();
+    check.input("inUsuario", sql.NVarChar(50), usuario);
+    check.input("inPostInIP", sql.VarChar(50), ip);
+    check.output("estaBlock", sql.Bit);
+    const resultCheck = await check.execute("sp_CheckLoginBlock");
 
-        const result = await request.execute("sp_Login");
-        const retorno = result.output.outCodigo;
-
-        if (retorno === 0) {
-            res.json({ success: true });
-        } else if (retorno === 50001) {
-            res.json({ success: false, message: "Usuario no existe" });
-        } else if (retorno === 50002) {
-            res.json({ success: false, message: "Contraseña incorrecta" });
-        } else if (retorno === 50003) {
-            res.json({ success: false, message: "Cuenta bloqueada temporalmente" });
-        } else {
-            res.json({ success: false, message: "Error en el login" });
-        }
-    } catch (err) {
-        console.error("Error en /login:", err);
-        res.status(500).json({ success: false, message: "Error en el servidor" });
+    if (resultCheck.output.estaBlock) {
+      // ⏳ Calcular tiempo restante (entre 1 y 10 min)
+      const minutosRestantes = Math.max(
+        1,
+        10 - Math.floor((Date.now() % (10 * 60000)) / 60000)
+      );
+      return res.json({
+        success: false,
+        bloqueado: true,
+        minutosRestantes,
+        message: "Demasiados intentos de login. Intente de nuevo dentro de unos minutos."
+      });
     }
+
+    // 🔐 Si no está bloqueado, ejecutamos el login real
+    const request = pool.request();
+    request.input("inUsuario", sql.NVarChar(50), usuario);
+    request.input("inPassword", sql.NVarChar(64), contrasena);
+    request.input("inPostInIP", sql.VarChar(50), ip);
+    request.output("outCodigo", sql.Int);
+
+    const result = await request.execute("sp_Login");
+    console.log("🧩 Resultado completo de sp_Login:", result);
+    console.log("➡️ Código devuelto:", result.output?.outCodigo);
+    const codigo = result.output.outCodigo;
+
+    if (codigo === 0) {
+      res.json({ success: true });
+    } else if (codigo === 50001) {
+      res.json({ success: false, message: "Usuario no existe" });
+    } else if (codigo === 50002) {
+      res.json({ success: false, message: "Contraseña incorrecta" });
+    } else if (codigo === 50010) {
+      res.json({
+        success: false,
+        bloqueado: true,
+        minutosRestantes: 10,
+        message: "Demasiados intentos. Intente más tarde."
+      });
+    } else {
+      res.json({ success: false, message: "Error al iniciar sesión" });
+    }
+  } catch (err) {
+    console.error("❌ [ERROR /login]:", err);
+    res.status(500).json({ success: false, message: "Error en el servidor" });
+  }
 });
+
 
 // ======================== EMPLEADOS ========================
 
 // Obtener todos los empleados
 app.get("/empleados", async (req, res) => {
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
 
     request.output("outValorRetorno", sql.Int);
@@ -80,7 +111,7 @@ app.get("/empleados", async (req, res) => {
 app.post("/empleados-filtrar", async (req, res) => {
     const { valor, tipo } = req.body;
     try {
-        let pool = await sql.connect(dbConfig);
+        let pool = await sql.connect(dbconfig);
         let request = pool.request();
         request.input("Filtro", sql.NVarChar, valor);
         request.input("Tipo", sql.NVarChar, tipo);
@@ -109,7 +140,7 @@ app.post("/empleados-filtrar", async (req, res) => {
 // Obtener puestos
 app.get("/puestos", async (req, res) => {
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
     request.output("outValorRetorno", sql.Int);
 
@@ -131,7 +162,7 @@ app.get("/puestos", async (req, res) => {
 app.post("/empleados-insertar", async (req, res) => {
   const { nombre, documento, idPuesto } = req.body;
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
     request.input("Nombre", sql.NVarChar, nombre);
     request.input("Documento", sql.NVarChar, documento);
@@ -139,7 +170,14 @@ app.post("/empleados-insertar", async (req, res) => {
     request.output("outCodigo", sql.Int);
 
     const result = await request.execute("sp_InsertarEmpleado");
+
+    // 🔍 Log detallado
+    console.log("📥 Resultado de sp_InsertarEmpleado:", result);
+    console.log("📦 result.output:", result.output);
+    console.log("📦 result.recordset:", result.recordset);
+
     const codigo = result.output.outCodigo;
+    console.log("🔢 Código devuelto por SP:", codigo);
 
     if (codigo === 0) {
       res.json({ success: true });
@@ -151,9 +189,19 @@ app.post("/empleados-insertar", async (req, res) => {
       res.json({ success: false, message: "Error al insertar empleado" });
     }
   } catch (err) {
-    console.error("Error en /empleados-insertar:", err);
-    res.status(500).json({ success: false, message: "Error en el servidor" });
-  }
+      console.error("❌ [ERROR /empleados-insertar] Excepción atrapada:");
+      console.error("Mensaje:", err.message);
+
+      if (err.originalError?.info) {
+        console.error("📄 SQL Error Info:", err.originalError.info);
+      }
+
+      console.error("Stack:", err.stack);
+      res.status(500).json({
+        success: false,
+        message: "Error en el servidor (ver consola para detalles)"
+      });
+    }
 });
 
 // Consultar un empleado
@@ -164,7 +212,7 @@ app.get("/empleados-consultar/:id", async (req, res) => {
   }
 
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
     request.input("IdEmpleado", sql.Int, id);
     request.output("outCodigo", sql.Int);
@@ -189,7 +237,7 @@ app.get("/empleados-consultar/:id", async (req, res) => {
 app.delete("/empleados-borrar/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
     request.input("IdEmpleado", sql.Int, id);
     request.output("outCodigo", sql.Int);
@@ -217,7 +265,7 @@ app.post("/empleados-modificar", async (req, res) => {
   const { id, nuevoDoc, nuevoNombre, nuevoIdPuesto } = req.body;
 
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
     request.input("IdEmpleado", sql.Int, id);
     request.input("NuevoDocumento", sql.NVarChar, nuevoDoc);
@@ -250,7 +298,7 @@ app.get("/movimientos/:idEmpleado", async (req, res) => {
   const { idEmpleado } = req.params;
 
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
 
     request.input("IdEmpleado", sql.Int, idEmpleado);
@@ -278,7 +326,7 @@ app.get("/movimientos/:idEmpleado", async (req, res) => {
 // ======================== OBTENER TIPOS DE MOVIMIENTO ========================
 app.get("/tipos-movimiento", async (req, res) => {
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
     request.output("outCodigo", sql.Int);
 
@@ -300,7 +348,7 @@ app.get("/tipos-movimiento", async (req, res) => {
 app.post("/movimientos-insertar", async (req, res) => {
   const { idEmpleado, idTipoMovimiento, monto, idUsuario, ip } = req.body;
   try {
-    let pool = await sql.connect(dbConfig);
+    let pool = await sql.connect(dbconfig);
     let request = pool.request();
 
     request.input("IdEmpleado", sql.Int, idEmpleado);
