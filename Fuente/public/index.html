@@ -21,7 +21,7 @@
       <div class="password-wrapper">
         <input type="password" id="contrasena" name="contrasena" required>
         <button type="button" id="togglePassword" class="toggle-btn">
-          <i class="fa-solid fa-eye-slash"></i> <!-- 👈 por defecto está oculto -->
+          <i class="fa-solid fa-eye-slash"></i>
         </button>
       </div>
 
@@ -40,13 +40,11 @@
     toggleBtn.addEventListener("click", () => {
       const isPassword = passwordField.type === "password";
       passwordField.type = isPassword ? "text" : "password";
-
-      // Cambiar ícono
-      icon.classList.toggle("fa-eye", isPassword);       // 👁 abierto cuando se ve
-      icon.classList.toggle("fa-eye-slash", !isPassword); // 👁‍🗨 cerrado cuando está oculto
+      icon.classList.toggle("fa-eye", isPassword);
+      icon.classList.toggle("fa-eye-slash", !isPassword);
     });
 
-    // Validación de login
+    // Login
     document.getElementById("btn-login").addEventListener("click", async () => {
       const usuario = document.getElementById("usuario").value.trim();
       const contrasena = document.getElementById("contrasena").value.trim();
@@ -67,12 +65,19 @@
 
         if (data.success) {
           Swal.fire("Éxito", "Inicio de sesión correcto", "success")
-            .then(() => {
-              window.location.href = "empleados.html"; // redirige después del login
-            });
-        } else {
-          Swal.fire("Error", data.message || "Usuario o contraseña incorrectos.", "error");
+            .then(() => window.location.href = "empleados.html");
+        } 
+        else if (data.bloqueado) {
+          const minutos = data.minutosRestantes || 10;
+          Swal.fire({
+            icon: "warning",
+            title: "Demasiados intentos de login",
+            text: `Intente de nuevo dentro de ${minutos} minuto${minutos > 1 ? "s" : ""}.`
+          });
         }
+        else {
+          Swal.fire("Error", data.message || "Usuario o contraseña incorrectos.", "error");
+      }
       } catch (err) {
         console.error(err);
         Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
