@@ -1,0 +1,104 @@
+/* ======== CONTENEDOR GENERAL ======== */
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #003366;
+  margin-bottom: 25px;
+  font-weight: 700;
+}
+
+/* ======== INFO DEL EMPLEADO ======== */
+.info-empleado {
+  background: #e9f1ff;
+  border: 2px solid #003366;
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin: 0 auto 25px auto;
+  max-width: 600px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  line-height: 1.6;
+  color: #00264d;
+  font-size: 15px;
+}
+
+/* ======== TABLA ======== */
+.table-container {
+  overflow-x: auto;
+  margin: 0 auto;
+  max-width: 1000px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+#tablaMovimientos {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 15px;
+}
+
+#tablaMovimientos thead {
+  background-color: #003366;
+  color: #fff;
+}
+
+#tablaMovimientos th, 
+#tablaMovimientos td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #ddd;
+}
+
+#tablaMovimientos tr:nth-child(even) {
+  background-color: #f2f6fa;
+}
+
+#tablaMovimientos tr:hover {
+  background-color: #dbe9ff;
+  transition: 0.2s;
+}
+
+/* ======== BOTÓN ======== */
+.button-group {
+  text-align: center;
+  margin-top: 25px;
+}
+
+#btn-insertar-mov {
+  background-color: #003366;
+  color: white;
+  font-size: 16px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#btn-insertar-mov:hover {
+  background-color: #0055aa;
+}
+
+#btn-insertar-mov:active {
+  background-color: #001f4d;
+}
+
+/* ======== SCROLLBAR PERSONALIZADO ======== */
+::-webkit-scrollbar {
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #003366;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0055aa;
+}
