@@ -13,6 +13,8 @@ from dbo.Empleado
 select *
 from dbo.Movimiento
 
+
+delete from dbo.BitacoraEvento
 delete from dbo.Movimiento
 --7
 delete from dbo.Empleado
@@ -35,7 +37,7 @@ DBCC CHECKIDENT ('dbo.Usuario', RESEED, 0);
 DBCC CHECKIDENT ('dbo.Error', RESEED, 0);
 DBCC CHECKIDENT ('dbo.Empleado', RESEED, 0);
 DBCC CHECKIDENT ('dbo.Movimiento', RESEED, 0);
-
+DBCC CHECKIDENT ('dbo.BitacoraEvento', RESEED, 0);
 
 
 
