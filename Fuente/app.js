@@ -20,68 +20,63 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // ======================== LOGIN ========================
-// ======================== LOGIN (modo debug) ========================
-// ======================== LOGIN ========================
 app.post("/login", async (req, res) => {
   try {
     const { usuario, contrasena } = req.body;
     const ip = req.ip || req.connection.remoteAddress || "127.0.0.1";
     const pool = await sql.connect(dbconfig);
 
-    // 🧱 Primero verificamos si está bloqueado
-    const check = pool.request();
-    check.input("inUsuario", sql.NVarChar(50), usuario);
-    check.input("inPostInIP", sql.VarChar(50), ip);
-    check.output("estaBlock", sql.Bit);
-    const resultCheck = await check.execute("sp_CheckLoginBlock");
-
-    if (resultCheck.output.estaBlock) {
-      // ⏳ Calcular tiempo restante (entre 1 y 10 min)
-      const minutosRestantes = Math.max(
-        1,
-        10 - Math.floor((Date.now() % (10 * 60000)) / 60000)
-      );
-      return res.json({
-        success: false,
-        bloqueado: true,
-        minutosRestantes,
-        message: "Demasiados intentos de login. Intente de nuevo dentro de unos minutos."
-      });
-    }
-
-    // 🔐 Si no está bloqueado, ejecutamos el login real
+    // 🔐 Ejecutar SP_Login directamente (ya maneja bloqueo e intentos)
     const request = pool.request();
     request.input("inUsuario", sql.NVarChar(50), usuario);
     request.input("inPassword", sql.NVarChar(64), contrasena);
     request.input("inPostInIP", sql.VarChar(50), ip);
     request.output("outCodigo", sql.Int);
+    request.output("outMinutosRestantes", sql.Int);
 
     const result = await request.execute("sp_Login");
-    console.log("🧩 Resultado completo de sp_Login:", result);
-    console.log("➡️ Código devuelto:", result.output?.outCodigo);
     const codigo = result.output.outCodigo;
+    const minutos = result.output.outMinutosRestantes || 0;
 
+    console.log("🧩 Resultado completo de sp_Login:", result);
+    console.log("➡️ Código devuelto:", codigo);
+    console.log("⏱️ Minutos restantes:", minutos);
+
+    // 📦 Respuestas según código
     if (codigo === 0) {
-      res.json({ success: true });
-    } else if (codigo === 50001) {
-      res.json({ success: false, message: "Usuario no existe" });
-    } else if (codigo === 50002) {
-      res.json({ success: false, message: "Contraseña incorrecta" });
-    } else if (codigo === 50010) {
-      res.json({
+      return res.json({ success: true });
+    }
+
+    if (codigo === 50001) {
+      return res.json({ success: false, message: "Usuario no existe" });
+    }
+
+    if (codigo === 50002) {
+      return res.json({ success: false, message: "Contraseña incorrecta" });
+    }
+
+    if (codigo === 50003) {
+      // 🔒 Usuario bloqueado: mostramos tiempo exacto devuelto por SQL
+      const minutosRestantes = Math.max(1, Math.min(10, minutos));
+      return res.json({
         success: false,
         bloqueado: true,
-        minutosRestantes: 10,
-        message: "Demasiados intentos. Intente más tarde."
+        minutosRestantes,
+        message: `Demasiados intentos. Intente de nuevo dentro de ${minutosRestantes} minuto${minutosRestantes > 1 ? "s" : ""}.`
       });
-    } else {
-      res.json({ success: false, message: "Error al iniciar sesión" });
     }
+
+    if (codigo === 50008) {
+      return res.json({ success: false, message: "Error en la base de datos" });
+    }
+
+    return res.json({ success: false, message: "Error desconocido." });
   } catch (err) {
     console.error("❌ [ERROR /login]:", err);
     res.status(500).json({ success: false, message: "Error en el servidor" });
   }
 });
+
 
 
 // ======================== EMPLEADOS ========================
